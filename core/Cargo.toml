@@ -1,0 +1,22 @@
+[package]
+name = "viendesu-core"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = []
+tokio = ["dep:tokio"]
+test-util = ["dep:tokio"]
+
+[dependencies]
+eva.workspace = true
+serde.workspace = true
+schemars.workspace = true
+
+eyre.workspace = true
+
+serde_with.workspace = true
+futures.workspace = true
+lazy_static = "1.5.0"
+
+tokio = { workspace = true, features = ["rt"], optional = true }

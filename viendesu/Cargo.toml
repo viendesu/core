@@ -1,0 +1,17 @@
+[package]
+name = "viendesu"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = []
+
+tokio = ["viendesu-core/tokio"]
+http-client = ["viendesu-http/client"]
+http-server = ["viendesu-http/server"]
+
+[dependencies]
+viendesu-core = { workspace = true }
+viendesu-http = { workspace = true }
+viendesu-auth = { workspace = true }
+viendesu-captcha = { workspace = true }

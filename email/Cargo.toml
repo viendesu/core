@@ -1,0 +1,12 @@
+[package]
+name = "viendesu-email"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["smtp"]
+smtp = []
+
+[dependencies]
+viendesu-core.workspace = true
+eva.workspace = true
