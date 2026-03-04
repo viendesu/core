@@ -1,7 +1,7 @@
 use super::*;
 
 use viendesu_core::requests::users::{
-    begin_auth, check_auth, confirm_sign_up, finish_auth, get, sign_in, sign_up, update,
+    begin_auth, check_auth, confirm_sign_up, finish_auth, get, search, sign_in, sign_up, update,
 };
 
 use crate::requests::users as requests;
@@ -12,6 +12,26 @@ impl Users for HttpClient {
             Some(u) => (c!("/users/{u}"), requests::Get {}),
             None => ("/users/me".into(), requests::Get {}),
         })
+    }
+
+    fn search(&mut self) -> impl CallStep<search::Args, Ok = search::Ok, Err = search::Err> {
+        self.do_call(
+            Method::GET,
+            |search::Args {
+                 query,
+                 limit,
+                 start_from,
+             }| {
+                (
+                    c!("/users"),
+                    requests::Search {
+                        query,
+                        limit,
+                        start_from,
+                    },
+                )
+            },
+        )
     }
 
     fn check_auth(

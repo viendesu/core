@@ -1,4 +1,4 @@
-use eva::data;
+use eva::{data, str::CompactString};
 
 use viendesu_core::{
     errors,
@@ -7,6 +7,19 @@ use viendesu_core::{
 };
 
 use super::status_code;
+
+#[data]
+pub struct Search {
+    pub query: Option<CompactString>,
+    #[serde(default)]
+    pub limit: reqs::search::Limit,
+    pub start_from: Option<core::Id>,
+}
+
+impl_req!(Search => [reqs::search::Ok; reqs::search::Err]);
+
+status_code::direct!(reqs::search::Ok => OK);
+status_code::map!(reqs::search::Err => []);
 
 #[data]
 pub struct BeginAuth {

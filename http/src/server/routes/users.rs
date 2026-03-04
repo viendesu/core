@@ -1,11 +1,11 @@
 use super::*;
 
 use crate::requests::users::{
-    BeginAuth, CheckAuth, ConfirmSignUp, FinishAuth, Get, SignIn, SignUp, Update,
+    BeginAuth, CheckAuth, ConfirmSignUp, FinishAuth, Get, Search, SignIn, SignUp, Update,
 };
 use viendesu_core::{
     requests::users::{
-        begin_auth, check_auth, confirm_sign_up, finish_auth, get, sign_in, sign_up, update,
+        begin_auth, check_auth, confirm_sign_up, finish_auth, get, search, sign_in, sign_up, update,
     },
     service::{tabs::Tabs, users::Users},
 };
@@ -24,6 +24,25 @@ fn convert_update(u: Update) -> update::Update {
 
 pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
     router
+        .route(
+            "/",
+            get(async |mut session: SessionOf<T>, ctx: Ctx<Search>| {
+                let Search {
+                    query,
+                    limit,
+                    start_from,
+                } = ctx.request;
+                session
+                    .users()
+                    .search()
+                    .call(search::Args {
+                        query,
+                        limit,
+                        start_from,
+                    })
+                    .await
+            }),
+        )
         .route(
             "/{sel}",
             get(async |mut session: SessionOf<T>, mut ctx: Ctx<Get>| {

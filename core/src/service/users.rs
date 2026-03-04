@@ -2,7 +2,7 @@ use eva::auto_impl;
 
 use crate::{
     requests::users::{
-        begin_auth, check_auth, confirm_sign_up, finish_auth, get, sign_in, sign_up, update,
+        begin_auth, check_auth, confirm_sign_up, finish_auth, get, search, sign_in, sign_up, update,
     },
     service::CallStep,
 };
@@ -13,6 +13,8 @@ pub trait Users: Send + Sync {
     fn check_auth(
         &mut self,
     ) -> impl CallStep<check_auth::Args, Ok = check_auth::Ok, Err = check_auth::Err>;
+
+    fn search(&mut self) -> impl CallStep<search::Args, Ok = search::Ok, Err = search::Err>;
 
     fn begin_auth(
         &mut self,

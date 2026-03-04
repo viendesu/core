@@ -1,12 +1,41 @@
 ///! # Users functionality
 ///!
 ///! Subject of actions.
-use eva::{data, time::Timestamp};
+use eva::{data, int, str::CompactString, time::Timestamp};
 
 use crate::{
     errors::users as errors,
     types::{True, file, patch::Patch, session, user},
 };
+
+pub mod search {
+    use super::*;
+
+    #[int(u8, 1..=64)]
+    pub enum Limit {}
+
+    impl Default for Limit {
+        fn default() -> Self {
+            Self::POS24
+        }
+    }
+
+    #[data]
+    pub struct Args {
+        pub query: Option<CompactString>,
+        #[serde(default)]
+        pub limit: Limit,
+        pub start_from: Option<user::Id>,
+    }
+
+    #[data]
+    pub struct Ok {
+        pub found: Vec<user::User>,
+    }
+
+    #[data(error, display("_"))]
+    pub enum Err {}
+}
 
 pub mod begin_auth {
     use super::*;
