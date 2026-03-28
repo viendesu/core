@@ -21,6 +21,9 @@ mod response;
 
 mod routes;
 
+/// 24 hours
+const CORS_MAX_AGE: std::time::Duration = std::time::Duration::from_secs(86400);
+
 pub trait Types: Send + Sync + 'static {
     type Service: IsService + Clone;
 }
@@ -64,7 +67,7 @@ pub fn make_router<T: Types>(service: T::Service) -> axum::Router {
     routes::make(scope)
         .into_axum()
         .layer(fastrace_axum::FastraceLayer)
-        .layer(cors::CorsLayer::very_permissive())
+        .layer(cors::CorsLayer::very_permissive().max_age(CORS_MAX_AGE))
 }
 
 #[perfect_derive(Clone)]
