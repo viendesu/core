@@ -21,7 +21,7 @@ use viendesu_core::{
 };
 
 use axum::{
-    extract::{FromRequest, Multipart, Request as AxumRequest},
+    extract::{DefaultBodyLimit, FromRequest, Multipart, Request as AxumRequest},
     response::Response as AxumResponse,
 };
 
@@ -121,20 +121,24 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                     .await
             }),
         )
-        .route(
-            "/{id}",
-            Handler::post(load_upload_context).exec(
-                async |mut session: SessionOf<T>, ctx: Ctx<Finish>| {
-                    let Finish { id, stream } = ctx.request;
+        .nest("/{id}", |router| {
+            router
+                .route(
+                    "/",
+                    Handler::post(load_upload_context).exec(
+                        async |mut session: SessionOf<T>, ctx: Ctx<Finish>| {
+                            let Finish { id, stream } = ctx.request;
 
-                    session
-                        .uploads()
-                        .finish()
-                        .call(finish::Args { id, stream })
-                        .await
-                },
-            ),
-        )
+                            session
+                                .uploads()
+                                .finish()
+                                .call(finish::Args { id, stream })
+                                .await
+                        },
+                    ),
+                )
+                .map_axum(|r| r.layer(DefaultBodyLimit::disable()))
+        })
         .route(
             "/{id}",
             delete(async |mut session: SessionOf<T>, mut ctx: Ctx<Abort>| {

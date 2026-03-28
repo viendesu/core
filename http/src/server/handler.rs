@@ -83,6 +83,14 @@ impl<T: Types> RouterScope<T> {
         Self { router, state }
     }
 
+    pub fn map_axum(self, f: impl FnOnce(AxumRouter) -> AxumRouter) -> Self {
+        let Self { router, state } = self;
+        Self {
+            router: f(router),
+            state,
+        }
+    }
+
     pub fn into_axum(self) -> AxumRouter {
         self.router
     }
