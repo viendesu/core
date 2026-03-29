@@ -53,7 +53,8 @@ where
 
     let request: R = if parts.method == Method::GET {
         let query = parts.uri.query().unwrap_or("");
-        serde_urlencoded::from_str(query)
+        let de = serde_urlencoded::Deserializer::new(form_urlencoded::parse(query.as_bytes()));
+        serde_path_to_error::deserialize(de)
             .map_err(|e| Aux::Deserialization(format!("failed to decode query: {e}")))
             .map_err(|e| response::err(response_format, e))?
     } else {

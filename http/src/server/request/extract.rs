@@ -27,7 +27,8 @@ pub fn raw_query(parts: &Parts) -> &str {
 
 pub fn query<'de, T: serde::de::Deserialize<'de>>(parts: &'de Parts) -> AuxResult<T> {
     let raw = raw_query(parts);
-    serde_urlencoded::from_str(raw)
+    let de = serde_urlencoded::Deserializer::new(form_urlencoded::parse(raw.as_bytes()));
+    serde_path_to_error::deserialize(de)
         .map_err(|e| Aux::Deserialization(format!("failed to decode query string: {e}")))
 }
 

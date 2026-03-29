@@ -58,7 +58,10 @@ impl Format {
         T: serde::Deserialize<'de>,
     {
         match self {
-            Self::Json => serde_json::from_slice(buf).wrap_err("failed to deserialize JSON"),
+            Self::Json => {
+                let de = &mut serde_json::Deserializer::from_slice(buf);
+                serde_path_to_error::deserialize(de).wrap_err("failed to deserialize JSON")
+            }
         }
     }
 }
