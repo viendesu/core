@@ -39,6 +39,8 @@ pub mod update {
         #[display("{_0}")]
         NotFound(#[from] errors::games::NotFound),
         #[display("{_0}")]
+        AlreadyTaken(#[from] errors::games::AlreadyTaken),
+        #[display("{_0}")]
         NoSuchTag(#[from] errors::marks::NoSuchTag),
         #[display("{_0}")]
         NoSuchBadge(#[from] errors::marks::NoSuchBadge),
