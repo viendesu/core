@@ -1,6 +1,7 @@
 use eva::auto_impl;
 
-use crate::{requests::files::get_info, service::CallStep};
+use crate::service::CallStep;
+use viendesu_protocol::requests::files::get_info;
 
 #[auto_impl(&mut, Box)]
 pub trait Files {

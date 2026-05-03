@@ -2,7 +2,7 @@ use eva::{data, str::CompactString};
 
 use crate::requests::status_code;
 
-use viendesu_core::requests::marks as reqs;
+use viendesu_protocol::requests::marks as reqs;
 
 #[data]
 pub struct AddBadge {
@@ -49,7 +49,7 @@ status_code::map!(reqs::list_badges::Err => []);
 
 const _: () = {
     use status_code::*;
-    use viendesu_core::errors::marks::*;
+    use viendesu_protocol::errors::marks::*;
 
     direct!(NoSuchTag => NOT_FOUND);
     direct!(NoSuchGenre => NOT_FOUND);

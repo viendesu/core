@@ -1,6 +1,6 @@
 use eva::data;
 
-use viendesu_core::{errors, requests::tabs as reqs, types::entity};
+use viendesu_protocol::{errors, requests::tabs as reqs, types::entity};
 
 use crate::requests::status_code;
 

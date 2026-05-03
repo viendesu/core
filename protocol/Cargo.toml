@@ -1,0 +1,17 @@
+[package]
+name = "viendesu-protocol"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = []
+
+[dependencies]
+eva.workspace = true
+serde.workspace = true
+schemars.workspace = true
+
+eyre.workspace = true
+
+serde_with.workspace = true
+futures.workspace = true

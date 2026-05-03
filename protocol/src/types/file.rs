@@ -9,11 +9,8 @@ use std::{
     str::FromStr,
 };
 
-use crate::{
-    types::entity,
-    world::{World, WorldMut},
-};
-use eva::{data, hash::blake3, int, rand::Rng, str, str::ToCompactString, time::Clock};
+use crate::types::entity;
+use eva::{data, hash::blake3, int, str};
 
 pub type Hash = blake3::Hash;
 
@@ -102,10 +99,6 @@ entity::define_eid! {
 }
 
 impl Id {
-    pub fn new<W: WorldMut>(mut w: World<W>, server: Server) -> Self {
-        Self::from_parts(w.clock().get().as_millis(), w.rng().random(), server)
-    }
-
     pub const fn from_parts(millis: u64, random: u128, server: Server) -> Self {
         let id = entity::Id::from_parts(
             millis,

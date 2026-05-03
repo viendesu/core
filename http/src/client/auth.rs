@@ -1,4 +1,4 @@
-use viendesu_core::errors::AuxResult;
+use viendesu_protocol::errors::AuxResult;
 
 use super::*;
 

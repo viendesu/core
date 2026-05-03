@@ -1,6 +1,6 @@
 use super::*;
 
-use viendesu_core::{
+use viendesu_protocol::{
     requests::games::{create, get, search, update},
     types::game::Selector,
 };

@@ -11,10 +11,8 @@ use axum::{
     routing::{MethodFilter, method_routing},
 };
 
-use viendesu_core::{
-    errors as core_errors,
-    service::{Session, SessionOf, authz::Authentication as _},
-};
+use viendesu_core::service::{Session, SessionOf, authz::Authentication as _};
+use viendesu_protocol::errors as core_errors;
 
 use crate::server::{
     State, Types,

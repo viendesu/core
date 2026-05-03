@@ -2,7 +2,7 @@ use eva::{data, trait_set};
 
 use axum::http::request::Parts;
 
-use viendesu_core::errors::AuxResult;
+use viendesu_protocol::errors::AuxResult;
 
 use crate::{format::Format, requests::Request};
 

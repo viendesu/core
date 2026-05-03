@@ -2,7 +2,7 @@ use eva::data;
 
 use crate::requests::status_code;
 
-use viendesu_core::{errors, requests::files as reqs};
+use viendesu_protocol::{errors, requests::files as reqs};
 
 #[data]
 pub struct GetInfo {}

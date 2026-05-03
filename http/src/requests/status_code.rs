@@ -1,6 +1,6 @@
 use http::status::StatusCode;
 
-use viendesu_core::errors;
+use viendesu_protocol::errors;
 
 pub trait HasStatusCode {
     fn status_code(&self) -> StatusCode;

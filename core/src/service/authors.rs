@@ -1,7 +1,5 @@
-use crate::{
-    requests::authors::{create, get, search, update},
-    service::CallStep,
-};
+use crate::service::CallStep;
+use viendesu_protocol::requests::authors::{create, get, search, update};
 
 use eva::auto_impl;
 

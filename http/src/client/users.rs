@@ -1,6 +1,6 @@
 use super::*;
 
-use viendesu_core::requests::users::{
+use viendesu_protocol::requests::users::{
     begin_auth, check_auth, confirm_sign_up, finish_auth, get, search, sign_in, sign_up, update,
 };
 

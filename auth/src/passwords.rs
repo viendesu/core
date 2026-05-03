@@ -1,6 +1,6 @@
 use eva::auto_impl;
 
-use viendesu_core::types::user::PasswordHash;
+use viendesu_protocol::types::user::PasswordHash;
 
 /// Passwords generation utility.
 #[auto_impl(&, &mut, Arc)]

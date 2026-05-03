@@ -1,6 +1,6 @@
 use eva::{data, str::CompactString};
 
-use viendesu_core::{
+use viendesu_protocol::{
     errors,
     requests::users as reqs,
     types::{Patch, file, user as core},

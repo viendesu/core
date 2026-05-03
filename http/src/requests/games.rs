@@ -2,7 +2,7 @@ use eva::data;
 
 use crate::requests::status_code;
 
-use viendesu_core::{
+use viendesu_protocol::{
     errors,
     requests::games as reqs,
     types::{Patch, author, file, game, mark},

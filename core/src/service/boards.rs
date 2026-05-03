@@ -1,9 +1,7 @@
 use eva::auto_impl;
 
-use crate::{
-    requests::boards::{create, delete, edit, get},
-    service::CallStep,
-};
+use crate::service::CallStep;
+use viendesu_protocol::requests::boards::{create, delete, edit, get};
 
 #[auto_impl(&mut, Box)]
 pub trait Boards: Send + Sync {

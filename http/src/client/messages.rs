@@ -1,6 +1,6 @@
 use super::*;
 
-use viendesu_core::requests::messages::{delete, edit, get, post};
+use viendesu_protocol::requests::messages::{delete, edit, get, post};
 
 use crate::requests::messages as requests;
 

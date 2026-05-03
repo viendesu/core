@@ -2,9 +2,9 @@ use super::*;
 
 use crate::requests::authors::{Create, Get, Search, Update};
 
-use viendesu_core::{
+use viendesu_core::service::authors::Authors;
+use viendesu_protocol::{
     requests::authors::{create, get, search, update},
-    service::authors::Authors,
     types::author,
 };
 

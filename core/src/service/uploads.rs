@@ -1,9 +1,7 @@
 use eva::auto_impl;
 
-use crate::{
-    requests::uploads::{abort, finish, list_pending, start},
-    service::CallStep,
-};
+use crate::service::CallStep;
+use viendesu_protocol::requests::uploads::{abort, finish, list_pending, start};
 
 #[auto_impl(&mut, Box)]
 pub trait Uploads: Send + Sync {

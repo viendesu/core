@@ -3,7 +3,8 @@ use super::*;
 pub fn genres<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
     use crate::requests::marks::ListGenres;
 
-    use viendesu_core::{requests::marks::list_genres, service::marks::Genres as _};
+    use viendesu_core::service::marks::Genres as _;
+    use viendesu_protocol::requests::marks::list_genres;
 
     router.route(
         "/",
@@ -20,10 +21,8 @@ pub fn genres<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
 pub fn badges<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
     use crate::requests::marks::{AddBadge, ListBadges};
 
-    use viendesu_core::{
-        requests::marks::{add_badge, list_badges},
-        service::marks::Badges as _,
-    };
+    use viendesu_core::service::marks::Badges as _;
+    use viendesu_protocol::requests::marks::{add_badge, list_badges};
 
     router
         .route(
@@ -55,10 +54,8 @@ pub fn badges<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
 pub fn tags<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
     use crate::requests::marks::{AddTag, ListTags};
 
-    use viendesu_core::{
-        requests::marks::{add_tag, list_tags},
-        service::marks::Tags as _,
-    };
+    use viendesu_core::service::marks::Tags as _;
+    use viendesu_protocol::requests::marks::{add_tag, list_tags};
 
     router
         .route(

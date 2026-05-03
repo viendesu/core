@@ -1,9 +1,7 @@
 use eva::auto_impl;
 
-use crate::{
-    requests::games::{create, get, search, update},
-    service::CallStep,
-};
+use crate::service::CallStep;
+use viendesu_protocol::requests::games::{create, get, search, update};
 
 #[auto_impl(&mut, Box)]
 pub trait Games: Send + Sync {

@@ -4,7 +4,7 @@ use axum::{
 };
 
 use eva::bytes::Bytes;
-use viendesu_core::{
+use viendesu_protocol::{
     errors::{Aux, AuxResult},
     types::{captcha, session},
 };

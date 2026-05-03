@@ -1,6 +1,6 @@
 use eva::str::ToCompactString as _;
 
-use viendesu_core::{
+use viendesu_protocol::{
     errors::{Aux, Generic},
     mk_error,
 };

@@ -4,10 +4,8 @@ use crate::server::{
     handler::{RouterScope, delete, get, patch, post},
 };
 
-use viendesu_core::{
-    service::{CallStep, Session, SessionOf as SessionOfService},
-    types::user,
-};
+use viendesu_core::service::{CallStep, Session, SessionOf as SessionOfService};
+use viendesu_protocol::types::user;
 
 type SessionOf<T> = Session<SessionOfService<<T as Types>::Service>>;
 

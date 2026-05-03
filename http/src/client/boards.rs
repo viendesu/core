@@ -1,6 +1,6 @@
 use super::*;
 
-use viendesu_core::requests::boards::{create, delete, edit, get};
+use viendesu_protocol::requests::boards::{create, delete, edit, get};
 
 use crate::requests::boards as requests;
 

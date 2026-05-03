@@ -1,6 +1,6 @@
 use super::*;
 
-use viendesu_core::requests::threads::{create, delete, edit, get, search};
+use viendesu_protocol::requests::threads::{create, delete, edit, get, search};
 
 use crate::requests::threads as requests;
 

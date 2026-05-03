@@ -1,6 +1,6 @@
 use super::*;
 
-use viendesu_core::requests::authors::{create, get, search, update};
+use viendesu_protocol::requests::authors::{create, get, search, update};
 
 use crate::requests::authors as requests;
 

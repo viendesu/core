@@ -1,9 +1,7 @@
 use eva::auto_impl;
 
-use crate::{
-    requests::tabs::{delete, insert, list, list_items},
-    service::CallStep,
-};
+use crate::service::CallStep;
+use viendesu_protocol::requests::tabs::{delete, insert, list, list_items};
 
 #[auto_impl(&mut)]
 pub trait Tabs: Send + Sync {

@@ -1,10 +1,7 @@
 use eva::fut::Fut;
 
-use viendesu_core::{
-    bail,
-    types::captcha::Token,
-    world::{World, WorldMut},
-};
+use viendesu_core::world::{World, WorldMut};
+use viendesu_protocol::{bail, types::captcha::Token};
 
 use self::error::CaptchaResult;
 

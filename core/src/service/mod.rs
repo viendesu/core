@@ -1,6 +1,6 @@
 use eva::{auto_impl, handling, trait_set};
 
-use crate::{errors::Aux, requests::Response};
+use viendesu_protocol::{errors::Aux, requests::Response};
 
 pub use self::api_looks::Session;
 

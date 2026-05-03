@@ -8,22 +8,22 @@ use eva::{
 };
 
 use http::Method;
-use viendesu_core::{
+use viendesu_core::service::{
+    CallStep, Session, SessionMaker,
+    authors::Authors,
+    authz::Authentication,
+    boards::Boards,
+    games::Games,
+    marks::{Badges, Genres, Tags},
+    messages::Messages,
+    tabs::Tabs,
+    threads::Threads,
+    uploads::Uploads,
+    users::Users,
+};
+use viendesu_protocol::{
     errors::{self, Aux},
     requests::Response,
-    service::{
-        CallStep, Session, SessionMaker,
-        authors::Authors,
-        authz::Authentication,
-        boards::Boards,
-        games::Games,
-        marks::{Badges, Genres, Tags},
-        messages::Messages,
-        tabs::Tabs,
-        threads::Threads,
-        uploads::Uploads,
-        users::Users,
-    },
     types::session,
 };
 

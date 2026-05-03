@@ -42,11 +42,9 @@
 //! TODO.
 
 use eva::{
-    data, int,
-    rand::Rng as _,
-    str,
+    data, int, str,
     str::{FixedUtf8, HasPattern, Seq},
-    time::{Clock as _, Timestamp},
+    time::Timestamp,
 };
 
 use std::{
@@ -56,8 +54,6 @@ use std::{
     slice,
     str::{FromStr, from_utf8_unchecked},
 };
-
-use crate::world::{World, WorldMut};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize, de};
@@ -319,7 +315,6 @@ macro_rules! _define_eid {
 
         const _: () = {
             use $crate::{
-                world::{World, WorldMut},
                 types::entity,
                 _if_tail_exists
             };
@@ -460,38 +455,13 @@ macro_rules! _define_eid {
                 }
 
                 _if_tail_exists! {
-                    [$($KindTs)*] => {
-                        /// Generate new identifier.
-                        ///
-                        /// # Errors
-                        ///
-                        /// panics if passed wrong kind.
-                        #[track_caller]
-                        pub fn generate<W: WorldMut>(w: World<W>, kind: entity::Kind) -> Self {
-                            if Self::is_valid_kind(kind) {
-                                let id = entity::Id::generate(w, entity::Metadata::new(kind, 0));
-                                Self(id)
-                            } else {
-                                panic!(
-                                    "passed wrong kind for `{}`, available: [{}]",
-                                    stringify!($Name),
-                                    entity::DisplayArray(&[entity::Kind::$KindHd $(, entity::Kind::$KindTs)*])
-                                )
-                            }
-                        }
-                    };
+                    [$($KindTs)*] => {};
                     _ => {
                         /// Minimal ID in sense of ordering. No ID is lesser than this one.
                         pub const MIN: Self = Self(entity::Id::from_parts(0, 0, entity::Metadata::new(entity::Kind::$KindHd, 0)));
 
                         /// Maximal ID in sense of ordering. No ID could be greater than this one.
                         pub const MAX: Self = Self(entity::Id::from_parts(u64::MAX, u128::MAX, entity::Metadata::new(entity::Kind::$KindHd, u8::MAX)));
-
-                        /// Generate new identifier.
-                        pub fn generate<W: WorldMut>(w: World<W>) -> Self {
-                            let id = entity::Id::generate(w, entity::Metadata::new(entity::Kind::$KindHd, 0));
-                            Self(id)
-                        }
                     };
                 }
             }
@@ -742,18 +712,6 @@ impl Id {
         result |= (millis as u128) << 76;
 
         Self(unsafe { NonZeroU128::new_unchecked(result) })
-    }
-
-    /// Generate new identifier.
-    pub fn generate<W: WorldMut>(mut world: World<W>, metadata: Metadata) -> Self {
-        let millis = world
-            .clock()
-            .get()
-            .as_millis()
-            .saturating_sub(Self::TIMESTAMP_OFFSET);
-        let random: u128 = world.rng().random();
-
-        Self::from_parts(millis, random, metadata)
     }
 
     /// Convert ID into its raw representation.

@@ -2,7 +2,7 @@ use eva::data;
 
 use crate::requests::status_code;
 
-use viendesu_core::{
+use viendesu_protocol::{
     errors,
     requests::threads as reqs,
     types::{Patch, board, message, thread},

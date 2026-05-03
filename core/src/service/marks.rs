@@ -1,9 +1,7 @@
 use eva::auto_impl;
 
-use crate::{
-    requests::marks::{add_badge, add_tag, list_badges, list_genres, list_tags},
-    service::CallStep,
-};
+use crate::service::CallStep;
+use viendesu_protocol::requests::marks::{add_badge, add_tag, list_badges, list_genres, list_tags};
 
 #[auto_impl(&mut)]
 pub trait Genres: Send + Sync {

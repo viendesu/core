@@ -3,11 +3,9 @@ use super::*;
 use crate::requests::users::{
     BeginAuth, CheckAuth, ConfirmSignUp, FinishAuth, Get, Search, SignIn, SignUp, Update,
 };
-use viendesu_core::{
-    requests::users::{
-        begin_auth, check_auth, confirm_sign_up, finish_auth, get, search, sign_in, sign_up, update,
-    },
-    service::{tabs::Tabs, users::Users},
+use viendesu_core::service::{tabs::Tabs, users::Users};
+use viendesu_protocol::requests::users::{
+    begin_auth, check_auth, confirm_sign_up, finish_auth, get, search, sign_in, sign_up, update,
 };
 
 fn convert_update(u: Update) -> update::Update {
@@ -169,7 +167,7 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
         )
         .nest("/{user}/tabs", |router| {
             use crate::requests::tabs::{Delete, Insert, List, ListItems};
-            use viendesu_core::requests::tabs::{delete, insert, list, list_items};
+            use viendesu_protocol::requests::tabs::{delete, insert, list, list_items};
 
             router
                 .route(

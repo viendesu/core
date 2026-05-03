@@ -2,9 +2,9 @@ use super::*;
 
 use crate::requests::games::{Create, Get, Search, Update};
 
-use viendesu_core::{
+use viendesu_core::service::games::Games;
+use viendesu_protocol::{
     requests::games::{create, get, search, update},
-    service::games::Games,
     types::{author, game},
 };
 

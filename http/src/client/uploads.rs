@@ -2,7 +2,7 @@ use super::*;
 
 use futures::stream::StreamExt as _;
 
-use viendesu_core::{
+use viendesu_protocol::{
     requests::uploads::{abort, finish, list_pending, start},
     uploads::Chunk,
 };

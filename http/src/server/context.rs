@@ -16,7 +16,7 @@ use axum::{
 use futures::StreamExt;
 use serde::Deserialize;
 
-use viendesu_core::{
+use viendesu_protocol::{
     errors::{Aux, AuxResult},
     types::session,
 };

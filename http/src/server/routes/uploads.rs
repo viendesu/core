@@ -12,10 +12,10 @@ use crate::{
 use futures::stream;
 use tokio::{sync::mpsc, task::JoinHandle};
 
-use viendesu_core::{
+use viendesu_core::service::uploads::Uploads as _;
+use viendesu_protocol::{
     errors::Aux,
     requests::uploads::{abort, finish, list_pending, start},
-    service::uploads::Uploads as _,
     types::upload,
     uploads::{AbortReason, Chunk, UploadStream},
 };

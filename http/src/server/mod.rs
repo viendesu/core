@@ -3,10 +3,8 @@ use eva::{
 };
 
 use eyre::Context;
-use viendesu_core::{
-    errors::AuxResult,
-    service::{IsService, Session, SessionMaker, SessionOf},
-};
+use viendesu_core::service::{IsService, Session, SessionMaker, SessionOf};
+use viendesu_protocol::errors::AuxResult;
 
 use tokio::net;
 

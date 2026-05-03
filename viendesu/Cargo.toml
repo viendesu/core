@@ -11,6 +11,7 @@ http-client = ["viendesu-http/client"]
 http-server = ["viendesu-http/server"]
 
 [dependencies]
+viendesu-protocol = { workspace = true }
 viendesu-core = { workspace = true }
 viendesu-http = { workspace = true }
 viendesu-auth = { workspace = true }

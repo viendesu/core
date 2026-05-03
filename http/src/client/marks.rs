@@ -2,7 +2,7 @@ use super::*;
 
 use crate::requests::marks as requests;
 
-use viendesu_core::requests::marks::{add_badge, add_tag, list_badges, list_genres, list_tags};
+use viendesu_protocol::requests::marks::{add_badge, add_tag, list_badges, list_genres, list_tags};
 
 impl Genres for HttpClient {
     fn list(

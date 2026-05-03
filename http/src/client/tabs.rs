@@ -2,7 +2,7 @@ use super::*;
 
 use crate::requests::tabs;
 
-use viendesu_core::requests::tabs::{delete, insert, list, list_items};
+use viendesu_protocol::requests::tabs::{delete, insert, list, list_items};
 
 impl Tabs for HttpClient {
     fn list(&mut self) -> impl CallStep<list::Args, Ok = list::Ok, Err = list::Err> {

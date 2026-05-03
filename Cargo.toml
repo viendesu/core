@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "protocol/",
     "core/",
     "http/",
     "auth/",
@@ -30,6 +31,7 @@ viendesu-captcha = { path = "captcha/" }
 viendesu-auth = { path = "auth/" }
 viendesu-http = { path = "http/" }
 viendesu-core = { path = "core/" }
+viendesu-protocol = { path = "protocol/" }
 
 # TODO: upstream.
 [patch.crates-io]

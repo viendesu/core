@@ -5,4 +5,4 @@ edition = "2024"
 
 [dependencies]
 eva.workspace = true
-viendesu-core.workspace = true
+viendesu-protocol.workspace = true
