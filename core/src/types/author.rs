@@ -75,7 +75,7 @@ pub struct Author {
     pub title: Title,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<Description>,
-    pub owner: user::Mini,
+    pub owner: user::Id,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pfp: Option<file::Id>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -88,7 +88,7 @@ pub struct Author {
 /// Information about author verification.
 #[data]
 pub struct Verification {
-    pub by: user::Mini,
+    pub by: user::Id,
     pub at: Date,
 }
 

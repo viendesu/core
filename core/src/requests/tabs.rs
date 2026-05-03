@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use eva::{data, int};
 
 use crate::{
@@ -60,8 +62,13 @@ pub mod list_items {
             items: Vec<tab::TabItem<game::Game>>,
             #[serde(default)]
             marks: game::Marks,
+            authors: HashMap<author::Id, author::Mini>,
+            users: HashMap<user::Id, user::Mini>,
         },
-        Authors(Vec<tab::TabItem<author::Author>>),
+        Authors {
+            items: Vec<tab::TabItem<author::Author>>,
+            users: HashMap<user::Id, user::Mini>,
+        },
     }
 
     #[data(error)]

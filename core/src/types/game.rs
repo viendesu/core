@@ -116,7 +116,7 @@ pub struct Game {
     pub title: Title,
     pub description: Option<Description>,
     pub mean_rating: MeanRating,
-    pub author: author::Mini,
+    pub author: author::Id,
     pub release_date: Option<ReleaseDate>,
     pub publication: Option<Publication>,
     pub downloads: Vec<Download>,

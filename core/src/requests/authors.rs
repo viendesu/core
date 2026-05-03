@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use eva::{data, int, str::CompactString};
 
 use crate::{
@@ -33,6 +35,7 @@ pub mod search {
     #[data]
     pub struct Ok {
         pub authors: Vec<author::Author>,
+        pub users: HashMap<user::Id, user::Mini>,
     }
 
     #[data(error)]
@@ -86,6 +89,7 @@ pub mod get {
     #[data]
     pub struct Ok {
         pub author: author::Author,
+        pub users: HashMap<user::Id, user::Mini>,
     }
 
     #[data(error)]

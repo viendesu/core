@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use crate::{
     errors,
-    types::{Patch, True, author, file, game, mark},
+    types::{Patch, True, author, file, game, mark, user},
 };
 
 use eva::{array, data, int, str, time};
@@ -132,6 +134,8 @@ pub mod search {
     #[data]
     pub struct Ok {
         pub found: Vec<game::Game>,
+        pub authors: HashMap<author::Id, author::Mini>,
+        pub users: HashMap<user::Id, user::Mini>,
     }
 
     #[data(error)]
@@ -202,6 +206,8 @@ pub mod get {
         // - downloads
         pub game: game::Game,
         pub marks: game::Marks,
+        pub authors: HashMap<author::Id, author::Mini>,
+        pub users: HashMap<user::Id, user::Mini>,
     }
 
     #[data(error)]
