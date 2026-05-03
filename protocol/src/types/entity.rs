@@ -72,6 +72,11 @@ pub trait IsEntityId:
     fn into_inner(&self) -> NonZeroU128;
 }
 
+/// Marker for entity IDs that wrap exactly one [`Kind`].
+pub trait SingleKindId: IsEntityId {
+    const KIND: Kind;
+}
+
 /// Entity kind.
 #[data(ord, copy, display(name))]
 #[derive(Hash)]
@@ -464,6 +469,15 @@ macro_rules! _define_eid {
                         pub const MAX: Self = Self(entity::Id::from_parts(u64::MAX, u128::MAX, entity::Metadata::new(entity::Kind::$KindHd, u8::MAX)));
                     };
                 }
+            }
+
+            _if_tail_exists! {
+                [$($KindTs)*] => {};
+                _ => {
+                    impl entity::SingleKindId for $Name {
+                        const KIND: entity::Kind = entity::Kind::$KindHd;
+                    }
+                };
             }
         };
     )*}};

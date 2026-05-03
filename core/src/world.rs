@@ -1,4 +1,10 @@
-use eva::{auto_impl, rand, time::Clock};
+use eva::{
+    auto_impl, rand,
+    rand::Rng as _,
+    time::Clock,
+};
+
+use viendesu_protocol::types::entity::{Id, IsEntityId, Kind, Metadata, SingleKindId};
 
 use crate::rt;
 
@@ -69,5 +75,25 @@ impl<W: WorldMut> World<W> {
 
     pub fn mut_(&mut self) -> World<&mut W> {
         World(&mut self.0)
+    }
+
+    pub fn generate_raw_id(&mut self, metadata: Metadata) -> Id {
+        let millis = self
+            .0
+            .get()
+            .as_millis()
+            .saturating_sub(Id::TIMESTAMP_OFFSET);
+        let random: u128 = self.0.rng().random();
+        Id::from_parts(millis, random, metadata)
+    }
+
+    #[track_caller]
+    pub fn generate_id_with<I: IsEntityId>(&mut self, kind: Kind) -> I {
+        let id = self.generate_raw_id(Metadata::new(kind, 0));
+        I::from_generic(id).expect("entity kind does not match the typed Id")
+    }
+
+    pub fn generate_id<I: SingleKindId>(&mut self) -> I {
+        self.generate_id_with(I::KIND)
     }
 }
