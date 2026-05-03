@@ -28,6 +28,7 @@ impl_req!(Update => [reqs::update::Ok; reqs::update::Err]);
 status_code::direct!(reqs::update::Ok => OK);
 status_code::map!(reqs::update::Err => [
     NotFound,
+    AlreadyTaken,
     NoSuchBadge,
     NoSuchGenre,
     NoSuchTag,
