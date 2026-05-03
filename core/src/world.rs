@@ -88,12 +88,16 @@ impl<W: WorldMut> World<W> {
     }
 
     #[track_caller]
-    pub fn generate_id_with<I: IsEntityId>(&mut self, kind: Kind) -> I {
-        let id = self.generate_raw_id(Metadata::new(kind, 0));
+    pub fn generate_id_meta<I: IsEntityId>(&mut self, metadata: Metadata) -> I {
+        let id = self.generate_raw_id(metadata);
         I::from_generic(id).expect("entity kind does not match the typed Id")
     }
 
+    pub fn generate_id_with<I: IsEntityId>(&mut self, kind: Kind) -> I {
+        self.generate_id_meta(Metadata::new(kind, 0))
+    }
+
     pub fn generate_id<I: SingleKindId>(&mut self) -> I {
-        self.generate_id_with(I::KIND)
+        self.generate_id_meta(Metadata::new(I::KIND, 0))
     }
 }
