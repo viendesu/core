@@ -1,4 +1,7 @@
-use eva::{data, error::ShitHappens};
+use eva::data;
+#[cfg(feature = "format-serde")]
+use eva::error::ShitHappens;
+#[cfg(feature = "format-serde")]
 use eyre::Context;
 
 #[data(copy, display("got unsupported mime type"), error)]
@@ -32,12 +35,14 @@ impl Format {
     }
 }
 
+#[cfg(feature = "format-serde")]
 #[data]
 #[derive(Default)]
 pub struct DumpParams {
     pub pretty: bool,
 }
 
+#[cfg(feature = "format-serde")]
 impl Format {
     pub fn dump<T: ?Sized>(self, params: DumpParams, what: &T, dst: &mut Vec<u8>)
     where
