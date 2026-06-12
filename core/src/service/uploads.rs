@@ -1,15 +1,9 @@
-use eva::auto_impl;
+service_trait! {
+    pub trait Uploads(viendesu_protocol::requests::uploads) {
+        list_pending,
 
-use crate::service::CallStep;
-use viendesu_protocol::requests::uploads::{abort, finish, list_pending, start};
-
-#[auto_impl(&mut, Box)]
-pub trait Uploads: Send + Sync {
-    fn list_pending(
-        &mut self,
-    ) -> impl CallStep<list_pending::Args, Ok = list_pending::Ok, Err = list_pending::Err>;
-
-    fn start(&mut self) -> impl CallStep<start::Args, Ok = start::Ok, Err = start::Err>;
-    fn abort(&mut self) -> impl CallStep<abort::Args, Ok = abort::Ok, Err = abort::Err>;
-    fn finish(&mut self) -> impl CallStep<finish::Args, Ok = finish::Ok, Err = finish::Err>;
+        start,
+        abort,
+        finish,
+    }
 }
