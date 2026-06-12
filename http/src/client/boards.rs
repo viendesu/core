@@ -10,7 +10,7 @@ impl Boards for HttpClient {
     }
 
     fn create(&mut self) -> impl CallStep<create::Args, Ok = create::Ok, Err = create::Err> {
-        self.do_call(Method::POST, todo::<_, requests::Create>())
+        self.do_call(Method::POST, todo::<_, create::Args>())
     }
 
     fn delete(&mut self) -> impl CallStep<delete::Args, Ok = delete::Ok, Err = delete::Err> {

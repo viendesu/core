@@ -1,51 +1,20 @@
-use eva::{data, str::CompactString};
+use eva::data;
 
-use viendesu_protocol::{
-    errors,
-    requests::authors as reqs,
-    types::{Patch, author, file, user},
-};
+use viendesu_protocol::{errors, requests::authors as reqs};
 
 use crate::requests::status_code;
 
-#[data]
-pub struct Search {
-    pub query: CompactString,
-    pub owned_by: Option<user::Selector>,
-    pub limit: Option<reqs::search::Limit>,
-    pub start_from: Option<author::Id>,
-}
-
-impl_req!(Search => [reqs::search::Ok; reqs::search::Err]);
+impl_req!(reqs::search::Args => [reqs::search::Ok; reqs::search::Err]);
 
 status_code::direct!(reqs::search::Ok => OK);
 status_code::map!(reqs::search::Err => [NoSuchUser]);
 
-#[serde_with::apply(Patch => #[serde(default)])]
-#[data]
-pub struct Update {
-    pub title: Patch<author::Title>,
-    pub description: Patch<Option<author::Description>>,
-    pub pfp: Patch<Option<file::Id>>,
-    pub slug: Patch<author::Slug>,
-    pub verified: Patch<bool>,
-}
-
-impl_req!(Update => [reqs::update::Ok; reqs::update::Err]);
+impl_req!(reqs::update::Update => [reqs::update::Ok; reqs::update::Err]);
 
 status_code::direct!(reqs::update::Ok => OK);
 status_code::map!(reqs::update::Err => [NotFound]);
 
-#[data]
-pub struct Create {
-    pub title: author::Title,
-    pub slug: author::Slug,
-    pub pfp: Option<file::Id>,
-    pub description: Option<author::Description>,
-    pub owner: Option<user::Id>,
-}
-
-impl_req!(Create => [reqs::create::Ok; reqs::create::Err]);
+impl_req!(reqs::create::Args => [reqs::create::Ok; reqs::create::Err]);
 
 status_code::direct!(reqs::create::Ok => OK);
 status_code::map!(reqs::create::Err => [NotFound, AlreadyExists, NoSuchUser]);

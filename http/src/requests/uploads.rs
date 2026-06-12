@@ -11,10 +11,7 @@ use viendesu_protocol::{
     uploads::UploadStream,
 };
 
-#[data]
-pub struct ListPending {}
-
-impl_req!(ListPending => [reqs::list_pending::Ok; reqs::list_pending::Err]);
+impl_req!(reqs::list_pending::Args => [reqs::list_pending::Ok; reqs::list_pending::Err]);
 status_code::direct!(reqs::list_pending::Ok => OK);
 status_code::map!(reqs::list_pending::Err => []);
 

@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::requests::games::{Create, Get, Search, Update};
+use crate::requests::games::Get;
 
 use viendesu_core::service::games::Games;
 use viendesu_protocol::{
@@ -12,73 +12,21 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
     router
         .route(
             "/",
-            post(async |mut session: SessionOf<T>, ctx: Ctx<Create>| {
-                let Create {
-                    title,
-                    description,
-                    thumbnail,
-                    tags,
-                    genres,
-                    author,
-                    slug,
-                    downloads,
-                    vndb,
-                    release_date,
-                    screenshots,
-                } = ctx.request;
-                session
-                    .games()
-                    .create()
-                    .call(create::Args {
-                        title,
-                        description,
-                        thumbnail,
-                        downloads,
-                        screenshots,
-                        author,
-                        slug,
-                        tags,
-                        genres,
-                        vndb,
-                        release_date,
-                    })
-                    .await
+            post(async |mut session: SessionOf<T>, ctx: Ctx<create::Args>| {
+                session.games().create().call(ctx.request).await
             }),
         )
         .route(
             "/{game_id}",
-            patch(async |mut session: SessionOf<T>, mut ctx: Ctx<Update>| {
-                let game_id: game::Id = ctx.path().await?;
-                let Update {
-                    title,
-                    description,
-                    slug,
-                    thumbnail,
-                    downloads,
-                    genres,
-                    badges,
-                    tags,
-                    screenshots,
-                    published,
-                } = ctx.request;
+            patch(async |mut session: SessionOf<T>, mut ctx: Ctx<update::Update>| {
+                let id: game::Id = ctx.path().await?;
 
                 session
                     .games()
                     .update()
                     .call(update::Args {
-                        id: game_id,
-                        update: update::Update {
-                            title,
-                            description,
-                            slug,
-                            thumbnail,
-                            genres,
-                            downloads,
-                            badges,
-                            tags,
-                            screenshots,
-                            published,
-                        },
+                        id,
+                        update: ctx.request,
                     })
                     .await
             }),
@@ -117,30 +65,8 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
         )
         .route(
             "/search",
-            post(async |mut session: SessionOf<T>, ctx: Ctx<Search>| {
-                let Search {
-                    query,
-                    author,
-                    include,
-                    exclude,
-                    order,
-                    sort_by,
-                    limit,
-                } = ctx.request;
-
-                session
-                    .games()
-                    .search()
-                    .call(search::Args {
-                        query,
-                        author,
-                        include,
-                        exclude,
-                        order,
-                        sort_by,
-                        limit,
-                    })
-                    .await
+            post(async |mut session: SessionOf<T>, ctx: Ctx<search::Args>| {
+                session.games().search().call(ctx.request).await
             }),
         )
 }

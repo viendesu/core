@@ -15,38 +15,22 @@ impl Users for HttpClient {
     }
 
     fn search(&mut self) -> impl CallStep<search::Args, Ok = search::Ok, Err = search::Err> {
-        self.do_call(
-            Method::GET,
-            |search::Args {
-                 query,
-                 limit,
-                 start_from,
-             }| {
-                (
-                    c!("/users"),
-                    requests::Search {
-                        query,
-                        limit,
-                        start_from,
-                    },
-                )
-            },
-        )
+        self.do_call(Method::GET, |args: search::Args| (c!("/users"), args))
     }
 
     fn check_auth(
         &mut self,
     ) -> impl CallStep<check_auth::Args, Ok = check_auth::Ok, Err = check_auth::Err> {
-        self.do_call(Method::GET, |check_auth::Args {}| {
-            ("/users/check_auth".into(), requests::CheckAuth {})
+        self.do_call(Method::GET, |args: check_auth::Args| {
+            ("/users/check-auth".into(), args)
         })
     }
 
     fn begin_auth(
         &mut self,
     ) -> impl CallStep<begin_auth::Args, Ok = begin_auth::Ok, Err = begin_auth::Err> {
-        self.do_call(Method::POST, |begin_auth::Args { method }| {
-            ("/users/begin-auth".into(), requests::BeginAuth { method })
+        self.do_call(Method::POST, |args: begin_auth::Args| {
+            ("/users/begin-auth".into(), args)
         })
     }
 
@@ -70,39 +54,20 @@ impl Users for HttpClient {
 
     fn update(&mut self) -> impl CallStep<update::Args, Ok = update::Ok, Err = update::Err> {
         self.do_call(Method::PATCH, |update::Args { user, update }| match user {
-            Some(u) => (c!("/users/{u}"), requests::Update::from(update)),
-            None => ("/users/me".into(), requests::Update::from(update)),
+            Some(u) => (c!("/users/{u}"), update),
+            None => ("/users/me".into(), update),
         })
     }
 
     fn sign_up(&mut self) -> impl CallStep<sign_up::Args, Ok = sign_up::Ok, Err = sign_up::Err> {
-        self.do_call(
-            Method::POST,
-            |sign_up::Args {
-                 nickname,
-                 email,
-                 display_name,
-                 password,
-             }| {
-                (
-                    "/users/sign_up".into(),
-                    requests::SignUp {
-                        nickname,
-                        email,
-                        password,
-                        display_name,
-                    },
-                )
-            },
-        )
+        self.do_call(Method::POST, |args: sign_up::Args| {
+            ("/users/sign_up".into(), args)
+        })
     }
 
     fn sign_in(&mut self) -> impl CallStep<sign_in::Args, Ok = sign_in::Ok, Err = sign_in::Err> {
-        self.do_call(Method::POST, |sign_in::Args { nickname, password }| {
-            (
-                "/users/sign_in".into(),
-                requests::SignIn { nickname, password },
-            )
+        self.do_call(Method::POST, |args: sign_in::Args| {
+            ("/users/sign_in".into(), args)
         })
     }
 }

@@ -10,7 +10,7 @@ impl Threads for HttpClient {
     }
 
     fn search(&mut self) -> impl CallStep<search::Args, Ok = search::Ok, Err = search::Err> {
-        self.do_call(Method::POST, todo::<_, requests::Search>())
+        self.do_call(Method::POST, todo::<_, search::Args>())
     }
 
     fn delete(&mut self) -> impl CallStep<delete::Args, Ok = delete::Ok, Err = delete::Err> {
@@ -22,6 +22,6 @@ impl Threads for HttpClient {
     }
 
     fn create(&mut self) -> impl CallStep<create::Args, Ok = create::Ok, Err = create::Err> {
-        self.do_call(Method::POST, todo::<_, requests::Create>())
+        self.do_call(Method::POST, todo::<_, create::Args>())
     }
 }

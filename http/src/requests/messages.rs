@@ -5,7 +5,7 @@ use crate::requests::status_code;
 use viendesu_protocol::{
     errors,
     requests::messages as reqs,
-    types::{message, thread},
+    types::message,
 };
 
 #[data]
@@ -26,13 +26,7 @@ impl_req!(Delete => [reqs::delete::Ok; reqs::delete::Err]);
 status_code::direct!(reqs::delete::Ok => OK);
 status_code::map!(reqs::delete::Err => [NotFound]);
 
-#[data]
-pub struct Post {
-    pub thread: thread::Selector,
-    pub text: message::Text,
-}
-
-impl_req!(Post => [reqs::post::Ok; reqs::post::Err]);
+impl_req!(reqs::post::Args => [reqs::post::Ok; reqs::post::Err]);
 
 status_code::direct!(reqs::post::Ok => OK);
 status_code::map!(reqs::post::Err => [NoSuchThread]);

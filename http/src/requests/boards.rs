@@ -35,14 +35,7 @@ impl_req!(Delete => [reqs::delete::Ok; reqs::delete::Err]);
 status_code::direct!(reqs::delete::Ok => OK);
 status_code::map!(reqs::delete::Err => [NotFound]);
 
-#[data]
-pub struct Create {
-    pub slug: board::Slug,
-    pub initial_message: message::Text,
-    pub by: Option<message::ById>,
-}
-
-impl_req!(Create => [reqs::create::Ok; reqs::create::Err]);
+impl_req!(reqs::create::Args => [reqs::create::Ok; reqs::create::Err]);
 
 status_code::direct!(reqs::create::Ok => OK);
 status_code::map!(reqs::create::Err => [AlreadyExists]);

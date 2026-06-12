@@ -8,17 +8,15 @@ impl Genres for HttpClient {
     fn list(
         &mut self,
     ) -> impl CallStep<list_genres::Args, Ok = list_genres::Ok, Err = list_genres::Err> {
-        self.do_call(Method::GET, |list_genres::Args {}| {
-            ("/genres".into(), requests::ListGenres {})
+        self.do_call(Method::GET, |args: list_genres::Args| {
+            ("/genres".into(), args)
         })
     }
 }
 
 impl Tags for HttpClient {
     fn list(&mut self) -> impl CallStep<list_tags::Args, Ok = list_tags::Ok, Err = list_tags::Err> {
-        self.do_call(Method::GET, |list_tags::Args { query }| {
-            ("/tags".into(), requests::ListTags { query })
-        })
+        self.do_call(Method::GET, |args: list_tags::Args| ("/tags".into(), args))
     }
 
     fn add(&mut self) -> impl CallStep<add_tag::Args, Ok = add_tag::Ok, Err = add_tag::Err> {
@@ -32,8 +30,8 @@ impl Badges for HttpClient {
     fn list(
         &mut self,
     ) -> impl CallStep<list_badges::Args, Ok = list_badges::Ok, Err = list_badges::Err> {
-        self.do_call(Method::GET, |list_badges::Args { query }| {
-            ("/badges".into(), requests::ListBadges { query })
+        self.do_call(Method::GET, |args: list_badges::Args| {
+            ("/badges".into(), args)
         })
     }
 

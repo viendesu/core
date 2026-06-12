@@ -1,25 +1,21 @@
 use super::*;
 
 pub fn genres<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
-    use crate::requests::marks::ListGenres;
-
     use viendesu_core::service::marks::Genres as _;
     use viendesu_protocol::requests::marks::list_genres;
 
     router.route(
         "/",
         get(
-            async move |mut session: SessionOf<T>, ctx: Ctx<ListGenres>| {
-                let ListGenres {} = ctx.request;
-
-                session.genres().list().call(list_genres::Args {}).await
+            async move |mut session: SessionOf<T>, ctx: Ctx<list_genres::Args>| {
+                session.genres().list().call(ctx.request).await
             },
         ),
     )
 }
 
 pub fn badges<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
-    use crate::requests::marks::{AddBadge, ListBadges};
+    use crate::requests::marks::AddBadge;
 
     use viendesu_core::service::marks::Badges as _;
     use viendesu_protocol::requests::marks::{add_badge, list_badges};
@@ -28,13 +24,8 @@ pub fn badges<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
         .route(
             "/",
             get(
-                async move |mut session: SessionOf<T>, ctx: Ctx<ListBadges>| {
-                    let ListBadges { query } = ctx.request;
-                    session
-                        .badges()
-                        .list()
-                        .call(list_badges::Args { query })
-                        .await
+                async move |mut session: SessionOf<T>, ctx: Ctx<list_badges::Args>| {
+                    session.badges().list().call(ctx.request).await
                 },
             ),
         )
@@ -52,7 +43,7 @@ pub fn badges<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
 }
 
 pub fn tags<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
-    use crate::requests::marks::{AddTag, ListTags};
+    use crate::requests::marks::AddTag;
 
     use viendesu_core::service::marks::Tags as _;
     use viendesu_protocol::requests::marks::{add_tag, list_tags};
@@ -60,10 +51,11 @@ pub fn tags<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
     router
         .route(
             "/",
-            get(async move |mut session: SessionOf<T>, ctx: Ctx<ListTags>| {
-                let ListTags { query } = ctx.request;
-                session.tags().list().call(list_tags::Args { query }).await
-            }),
+            get(
+                async move |mut session: SessionOf<T>, ctx: Ctx<list_tags::Args>| {
+                    session.tags().list().call(ctx.request).await
+                },
+            ),
         )
         .route(
             "/",

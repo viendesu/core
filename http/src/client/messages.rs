@@ -10,7 +10,7 @@ impl Messages for HttpClient {
     }
 
     fn post(&mut self) -> impl CallStep<post::Args, Ok = post::Ok, Err = post::Err> {
-        self.do_call(Method::POST, todo::<_, requests::Post>())
+        self.do_call(Method::POST, todo::<_, post::Args>())
     }
 
     fn delete(&mut self) -> impl CallStep<delete::Args, Ok = delete::Ok, Err = delete::Err> {

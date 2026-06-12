@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::requests::authors::{Create, Get, Search, Update};
+use crate::requests::authors::Get;
 
 use viendesu_core::service::authors::Authors;
 use viendesu_protocol::{
@@ -12,46 +12,14 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
     router
         .route(
             "/",
-            get(async |mut session: SessionOf<T>, ctx: Ctx<Search>| {
-                let Search {
-                    query,
-                    owned_by,
-                    start_from,
-                    limit,
-                } = ctx.request;
-                session
-                    .authors()
-                    .search()
-                    .call(search::Args {
-                        query,
-                        start_from,
-                        owned_by,
-                        limit,
-                    })
-                    .await
+            get(async |mut session: SessionOf<T>, ctx: Ctx<search::Args>| {
+                session.authors().search().call(ctx.request).await
             }),
         )
         .route(
             "/",
-            post(async |mut session: SessionOf<T>, ctx: Ctx<Create>| {
-                let Create {
-                    title,
-                    slug,
-                    description,
-                    owner,
-                    pfp,
-                } = ctx.request;
-                session
-                    .authors()
-                    .create()
-                    .call(create::Args {
-                        title,
-                        slug,
-                        description,
-                        pfp,
-                        owner,
-                    })
-                    .await
+            post(async |mut session: SessionOf<T>, ctx: Ctx<create::Args>| {
+                session.authors().create().call(ctx.request).await
             }),
         )
         .route(
@@ -65,30 +33,19 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
         )
         .route(
             "/{selector}",
-            patch(async |mut session: SessionOf<T>, mut ctx: Ctx<Update>| {
-                let author: author::Selector = ctx.path().await?;
-                let Update {
-                    title,
-                    description,
-                    pfp,
-                    slug,
-                    verified,
-                } = ctx.request;
+            patch(
+                async |mut session: SessionOf<T>, mut ctx: Ctx<update::Update>| {
+                    let author: author::Selector = ctx.path().await?;
 
-                session
-                    .authors()
-                    .update()
-                    .call(update::Args {
-                        author,
-                        update: update::Update {
-                            title,
-                            description,
-                            pfp,
-                            slug,
-                            verified,
-                        },
-                    })
-                    .await
-            }),
+                    session
+                        .authors()
+                        .update()
+                        .call(update::Args {
+                            author,
+                            update: ctx.request,
+                        })
+                        .await
+                },
+            ),
         )
 }

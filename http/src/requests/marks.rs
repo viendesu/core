@@ -22,28 +22,15 @@ impl_req!(AddTag => [reqs::add_tag::Ok; reqs::add_tag::Err]);
 status_code::direct!(reqs::add_tag::Ok => CREATED);
 status_code::map!(reqs::add_tag::Err => []);
 
-#[data]
-pub struct ListGenres {}
-
-impl_req!(ListGenres => [reqs::list_genres::Ok; reqs::list_genres::Err]);
+impl_req!(reqs::list_genres::Args => [reqs::list_genres::Ok; reqs::list_genres::Err]);
 status_code::direct!(reqs::list_genres::Ok => OK);
 status_code::map!(reqs::list_genres::Err => []);
 
-#[data]
-pub struct ListTags {
-    pub query: Option<CompactString>,
-}
-
-impl_req!(ListTags => [reqs::list_tags::Ok; reqs::list_tags::Err]);
+impl_req!(reqs::list_tags::Args => [reqs::list_tags::Ok; reqs::list_tags::Err]);
 status_code::direct!(reqs::list_tags::Ok => OK);
 status_code::map!(reqs::list_tags::Err => []);
 
-#[data]
-pub struct ListBadges {
-    pub query: Option<CompactString>,
-}
-
-impl_req!(ListBadges => [reqs::list_badges::Ok; reqs::list_badges::Err]);
+impl_req!(reqs::list_badges::Args => [reqs::list_badges::Ok; reqs::list_badges::Err]);
 status_code::direct!(reqs::list_badges::Ok => OK);
 status_code::map!(reqs::list_badges::Err => []);
 

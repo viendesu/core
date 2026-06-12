@@ -1,7 +1,7 @@
 use super::*;
 
 use crate::{
-    requests::uploads::{Abort, Finish, ListPending, Start},
+    requests::uploads::{Abort, Finish, Start},
     server::{
         handler::{Handler, delete, get, post},
         request::extract,
@@ -112,14 +112,11 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
     router
         .route(
             "/",
-            get(async |mut session: SessionOf<T>, ctx: Ctx<ListPending>| {
-                let ListPending {} = ctx.request;
-                session
-                    .uploads()
-                    .list_pending()
-                    .call(list_pending::Args {})
-                    .await
-            }),
+            get(
+                async |mut session: SessionOf<T>, ctx: Ctx<list_pending::Args>| {
+                    session.uploads().list_pending().call(ctx.request).await
+                },
+            ),
         )
         .nest("/{id}", |router| {
             router

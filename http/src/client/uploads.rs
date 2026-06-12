@@ -61,8 +61,8 @@ impl Uploads for HttpClient {
     fn list_pending(
         &mut self,
     ) -> impl CallStep<list_pending::Args, Ok = list_pending::Ok, Err = list_pending::Err> {
-        self.do_call(Method::GET, |list_pending::Args {}| {
-            (c!("/uploads"), requests::ListPending {})
+        self.do_call(Method::GET, |args: list_pending::Args| {
+            (c!("/uploads"), args)
         })
     }
 

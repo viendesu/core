@@ -5,7 +5,7 @@ use crate::requests::status_code;
 use viendesu_protocol::{
     errors,
     requests::threads as reqs,
-    types::{Patch, board, message, thread},
+    types::{Patch, message},
 };
 
 #[data]
@@ -34,25 +34,12 @@ impl_req!(Edit => [reqs::edit::Ok; reqs::edit::Err]);
 status_code::direct!(reqs::edit::Ok => OK);
 status_code::map!(reqs::edit::Err => [NotFound, NotAnOwner]);
 
-#[data]
-pub struct Search {
-    #[serde(default)]
-    pub limit: reqs::search::Limit,
-    pub after: Option<thread::Id>,
-}
-
-impl_req!(Search => [reqs::search::Ok; reqs::search::Err]);
+impl_req!(reqs::search::Args => [reqs::search::Ok; reqs::search::Err]);
 
 status_code::direct!(reqs::search::Ok => OK);
 status_code::map!(reqs::search::Err => []);
 
-#[data]
-pub struct Create {
-    pub board: board::Selector,
-    pub initial_message: message::Text,
-}
-
-impl_req!(Create => [reqs::create::Ok; reqs::create::Err]);
+impl_req!(reqs::create::Args => [reqs::create::Ok; reqs::create::Err]);
 
 status_code::direct!(reqs::create::Ok => CREATED);
 status_code::map!(reqs::create::Err => [NoSuchBoard]);

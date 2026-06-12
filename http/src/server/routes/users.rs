@@ -1,44 +1,17 @@
 use super::*;
 
-use crate::requests::users::{
-    BeginAuth, CheckAuth, ConfirmSignUp, FinishAuth, Get, Search, SignIn, SignUp, Update,
-};
+use crate::requests::users::{ConfirmSignUp, FinishAuth, Get};
 use viendesu_core::service::{tabs::Tabs, users::Users};
 use viendesu_protocol::requests::users::{
     begin_auth, check_auth, confirm_sign_up, finish_auth, get, search, sign_in, sign_up, update,
 };
 
-fn convert_update(u: Update) -> update::Update {
-    update::Update {
-        nickname: u.nickname,
-        display_name: u.display_name,
-        bio: u.bio,
-        password: u.password,
-        role: u.role,
-        pfp: u.pfp,
-        email: u.email,
-    }
-}
-
 pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
     router
         .route(
             "/",
-            get(async |mut session: SessionOf<T>, ctx: Ctx<Search>| {
-                let Search {
-                    query,
-                    limit,
-                    start_from,
-                } = ctx.request;
-                session
-                    .users()
-                    .search()
-                    .call(search::Args {
-                        query,
-                        limit,
-                        start_from,
-                    })
-                    .await
+            get(async |mut session: SessionOf<T>, ctx: Ctx<search::Args>| {
+                session.users().search().call(ctx.request).await
             }),
         )
         .route(
@@ -56,15 +29,11 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
         )
         .route(
             "/begin-auth",
-            post(async |mut session: SessionOf<T>, ctx: Ctx<BeginAuth>| {
-                session
-                    .users()
-                    .begin_auth()
-                    .call(begin_auth::Args {
-                        method: ctx.request.method,
-                    })
-                    .await
-            }),
+            post(
+                async |mut session: SessionOf<T>, ctx: Ctx<begin_auth::Args>| {
+                    session.users().begin_auth().call(ctx.request).await
+                },
+            ),
         )
         .route(
             "/finish-auth/{authsessid}",
@@ -81,9 +50,11 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
         )
         .route(
             "/check-auth",
-            get(async |mut session: SessionOf<T>, _ctx: Ctx<CheckAuth>| {
-                session.users().check_auth().call(check_auth::Args {}).await
-            }),
+            get(
+                async |mut session: SessionOf<T>, ctx: Ctx<check_auth::Args>| {
+                    session.users().check_auth().call(ctx.request).await
+                },
+            ),
         )
         .route(
             "/me",
@@ -93,64 +64,46 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
         )
         .route(
             "/sign_in",
-            post(async |mut session: SessionOf<T>, ctx: Ctx<SignIn>| {
-                session
-                    .users()
-                    .sign_in()
-                    .call(sign_in::Args {
-                        nickname: ctx.request.nickname,
-                        password: ctx.request.password,
-                    })
-                    .await
+            post(async |mut session: SessionOf<T>, ctx: Ctx<sign_in::Args>| {
+                session.users().sign_in().call(ctx.request).await
             }),
         )
         .route(
             "/sign_up",
-            post(async |mut session: SessionOf<T>, ctx: Ctx<SignUp>| {
-                let SignUp {
-                    nickname,
-                    email,
-                    password,
-                    display_name,
-                } = ctx.request;
-                session
-                    .users()
-                    .sign_up()
-                    .call(sign_up::Args {
-                        nickname,
-                        email,
-                        display_name,
-                        password,
-                    })
-                    .await
+            post(async |mut session: SessionOf<T>, ctx: Ctx<sign_up::Args>| {
+                session.users().sign_up().call(ctx.request).await
             }),
         )
         .route(
             "/{sel}",
-            patch(async |mut session: SessionOf<T>, mut ctx: Ctx<Update>| {
-                let user: user::Selector = ctx.path().await?;
-                session
-                    .users()
-                    .update()
-                    .call(update::Args {
-                        user: Some(user),
-                        update: convert_update(ctx.request),
-                    })
-                    .await
-            }),
+            patch(
+                async |mut session: SessionOf<T>, mut ctx: Ctx<update::Update>| {
+                    let user: user::Selector = ctx.path().await?;
+                    session
+                        .users()
+                        .update()
+                        .call(update::Args {
+                            user: Some(user),
+                            update: ctx.request,
+                        })
+                        .await
+                },
+            ),
         )
         .route(
             "/me",
-            patch(async |mut session: SessionOf<T>, ctx: Ctx<Update>| {
-                session
-                    .users()
-                    .update()
-                    .call(update::Args {
-                        user: None,
-                        update: convert_update(ctx.request),
-                    })
-                    .await
-            }),
+            patch(
+                async |mut session: SessionOf<T>, ctx: Ctx<update::Update>| {
+                    session
+                        .users()
+                        .update()
+                        .call(update::Args {
+                            user: None,
+                            update: ctx.request,
+                        })
+                        .await
+                },
+            ),
         )
         .route(
             "/{user}/confirm/{token}",
