@@ -16,8 +16,8 @@ pub mod update {
         pub update: Update,
     }
 
-    #[data]
     #[serde_with::apply(Patch => #[serde(default)])]
+    #[data]
     pub struct Update {
         pub title: Patch<game::Title>,
         pub description: Patch<Option<game::Description>>,

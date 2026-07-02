@@ -55,6 +55,7 @@ pub mod delete {
 pub mod edit {
     use super::*;
 
+    #[serde_with::apply(Patch => #[serde(default)])]
     #[data]
     pub struct Args {
         pub thread: thread::Id,
