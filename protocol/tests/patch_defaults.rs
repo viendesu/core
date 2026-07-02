@@ -30,3 +30,18 @@ fn explicit_keep_still_parses() {
         r#"{"title":"keep","description":"keep","slug":"keep","thumbnail":"keep","genres":"keep","downloads":"keep","badges":"keep","tags":"keep","screenshots":"keep","published":"keep"}"#,
     );
 }
+
+#[test]
+fn null_means_keep() {
+    use viendesu_protocol::types::Patch;
+
+    let upd: requests::games::update::Update =
+        serde_json::from_str(r#"{"title":null,"description":null}"#).unwrap();
+    assert!(matches!(upd.title, Patch::Keep));
+    assert!(matches!(upd.description, Patch::Keep));
+
+    // {"change": null} on a nullable field still means "clear", not Keep.
+    let upd: requests::games::update::Update =
+        serde_json::from_str(r#"{"description":{"change":null}}"#).unwrap();
+    assert!(matches!(upd.description, Patch::Change(None)));
+}
