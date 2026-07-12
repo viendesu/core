@@ -5,6 +5,7 @@ members = [
     "http/",
     "auth/",
     "captcha/",
+    "mcp/",
     "viendesu/",
 ]
 resolver = "3"
@@ -32,6 +33,7 @@ viendesu-auth = { path = "auth/" }
 viendesu-http = { path = "http/" }
 viendesu-core = { path = "core/" }
 viendesu-protocol = { path = "protocol/" }
+viendesu-mcp = { path = "mcp/" }
 
 # TODO: upstream.
 [patch.crates-io]

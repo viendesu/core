@@ -1,0 +1,19 @@
+[package]
+name = "viendesu-mcp"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+viendesu-core.workspace = true
+viendesu-protocol.workspace = true
+
+serde.workspace = true
+serde_json.workspace = true
+schemars.workspace = true
+
+axum = { version = "0.8.4", default-features = false }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"

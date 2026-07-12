@@ -9,6 +9,7 @@ default = []
 tokio = ["viendesu-core/tokio"]
 http-client = ["viendesu-http/client"]
 http-server = ["viendesu-http/server"]
+mcp = ["dep:viendesu-mcp"]
 
 [dependencies]
 viendesu-protocol = { workspace = true }
@@ -16,3 +17,4 @@ viendesu-core = { workspace = true }
 viendesu-http = { workspace = true }
 viendesu-auth = { workspace = true }
 viendesu-captcha = { workspace = true }
+viendesu-mcp = { workspace = true, optional = true }
