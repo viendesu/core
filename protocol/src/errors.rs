@@ -7,6 +7,9 @@ pub mod boards;
 pub mod messages;
 pub mod threads;
 
+pub mod articles;
+pub mod blogs;
+
 pub mod marks;
 pub mod tabs;
 

@@ -69,6 +69,9 @@ pub mod boards;
 pub mod messages;
 pub mod threads;
 
+pub mod articles;
+pub mod blogs;
+
 pub mod authors;
 pub mod games;
 pub mod users;
@@ -105,6 +108,9 @@ domains! {
     boards: boards::Boards,
     threads: threads::Threads,
     messages: messages::Messages,
+
+    blogs: blogs::Blogs,
+    articles: articles::Articles,
 
     authz: authz::Authentication,
 

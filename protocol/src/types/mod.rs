@@ -6,6 +6,9 @@ pub mod board;
 pub mod message;
 pub mod thread;
 
+pub mod article;
+pub mod blog;
+
 pub mod mark;
 pub mod tab;
 

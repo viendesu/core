@@ -11,8 +11,10 @@ use tower::util::ServiceExt;
 
 use viendesu_core::service::{
     AuxFut, CallStep, RespFut, Session, SessionMaker,
+    articles::Articles,
     authors::Authors,
     authz::Authentication,
+    blogs::Blogs,
     boards::Boards,
     games::Games,
     marks::{Badges, Genres, Tags},
@@ -114,6 +116,23 @@ impl Messages for Mock {
         post => requests::messages::post,
         delete => requests::messages::delete,
         edit => requests::messages::edit,
+    }
+}
+
+impl Blogs for Mock {
+    stub! {
+        get => requests::blogs::get,
+        edit => requests::blogs::edit,
+    }
+}
+
+impl Articles for Mock {
+    stub! {
+        get => requests::articles::get,
+        search => requests::articles::search,
+        create => requests::articles::create,
+        delete => requests::articles::delete,
+        edit => requests::articles::edit,
     }
 }
 

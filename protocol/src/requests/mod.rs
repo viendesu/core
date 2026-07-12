@@ -11,6 +11,9 @@ pub mod boards;
 pub mod messages;
 pub mod threads;
 
+pub mod articles;
+pub mod blogs;
+
 pub mod authors;
 pub mod files;
 pub mod games;

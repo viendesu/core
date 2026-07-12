@@ -7,7 +7,9 @@ use crate::registry::Tools;
 
 use viendesu_core::service::{
     CallStep as _, IsSession, Session,
+    articles::Articles as _,
     authors::Authors as _,
+    blogs::Blogs as _,
     boards::Boards as _,
     games::Games as _,
     marks::{Badges as _, Genres as _, Tags as _},
@@ -16,7 +18,9 @@ use viendesu_core::service::{
     threads::Threads as _,
     users::Users as _,
 };
-use viendesu_protocol::requests::{authors, boards, games, marks, messages, tabs, threads, users};
+use viendesu_protocol::requests::{
+    articles, authors, blogs, boards, games, marks, messages, tabs, threads, users,
+};
 
 /// Read-only tools over all queryable domains.
 pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
@@ -100,6 +104,27 @@ pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
             "Get a forum message by selector.",
             |mut s: Session<S>, args: messages::get::Args| async move {
                 s.messages().get().call(args).await
+            },
+        )
+        .tool(
+            "get_blog",
+            "Get a blog by its id or by the id of the owning entity (user, author or game).",
+            |mut s: Session<S>, args: blogs::get::Args| async move {
+                s.blogs().get().call(args).await
+            },
+        )
+        .tool(
+            "get_article",
+            "Get a blog article by id. The content is CommonMark.",
+            |mut s: Session<S>, args: articles::get::Args| async move {
+                s.articles().get().call(args).await
+            },
+        )
+        .tool(
+            "list_articles",
+            "List articles of a blog, paginated via `after` + `limit`.",
+            |mut s: Session<S>, args: articles::search::Args| async move {
+                s.articles().search().call(args).await
             },
         )
         .tool(
@@ -196,6 +221,37 @@ pub fn management<S: IsSession + 'static>() -> Tools<S> {
             "Delete a forum board.",
             |mut s: Session<S>, args: boards::delete::Args| async move {
                 s.boards().delete().call(args).await
+            },
+        )
+        .tool(
+            "edit_blog",
+            "Edit a blog. The blog is selected by its id or by the id of the owning \
+             entity; all fields are optional patches, omitted fields are kept as is.",
+            |mut s: Session<S>, args: blogs::edit::Args| async move {
+                s.blogs().edit().call(args).await
+            },
+        )
+        .tool(
+            "create_article",
+            "Publish an article to a blog. `content` is CommonMark. Requires \
+             authentication and ownership of the blog's entity.",
+            |mut s: Session<S>, args: articles::create::Args| async move {
+                s.articles().create().call(args).await
+            },
+        )
+        .tool(
+            "edit_article",
+            "Edit a blog article: title and content are optional patches, \
+             omitted fields are kept as is.",
+            |mut s: Session<S>, args: articles::edit::Args| async move {
+                s.articles().edit().call(args).await
+            },
+        )
+        .tool(
+            "delete_article",
+            "Delete a blog article.",
+            |mut s: Session<S>, args: articles::delete::Args| async move {
+                s.articles().delete().call(args).await
             },
         )
         .tool(

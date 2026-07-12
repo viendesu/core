@@ -10,8 +10,10 @@ use eva::{
 use http::Method;
 use viendesu_core::service::{
     CallStep, Session, SessionMaker,
+    articles::Articles,
     authors::Authors,
     authz::Authentication,
+    blogs::Blogs,
     boards::Boards,
     games::Games,
     marks::{Badges, Genres, Tags},
@@ -32,6 +34,9 @@ use crate::{format::Format, requests::Request};
 mod boards;
 mod messages;
 mod threads;
+
+mod articles;
+mod blogs;
 
 mod auth;
 
