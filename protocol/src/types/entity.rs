@@ -566,7 +566,9 @@ impl JsonSchema for Id {
                 {
                     "type": "integer",
                     "minimum": 0,
-                    "maximum": u128::MAX,
+                    // JSON numbers cannot hold u128, so the bound is approximate;
+                    // the exact range is enforced at deserialization.
+                    "maximum": u128::MAX as f64,
                     "description": "integer representation of the identifier, only in binary formats"
                 },
                 {
