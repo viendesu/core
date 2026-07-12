@@ -32,7 +32,7 @@ pub struct Finish {
     pub stream: UploadStream<'static>,
 }
 
-impl_req!(Finish => [reqs::finish::Ok; reqs::finish::Err]);
+impl_req!(Finish => multipart [reqs::finish::Ok; reqs::finish::Err]);
 status_code::direct!(reqs::finish::Ok => OK);
 status_code::map!(reqs::finish::Err => [
     HashMismatch,

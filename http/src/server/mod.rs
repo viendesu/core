@@ -14,6 +14,7 @@ pub mod config;
 
 mod context;
 mod handler;
+mod openapi;
 mod request;
 mod response;
 
@@ -59,11 +60,22 @@ pub async fn serve(
 }
 
 pub fn make_router<T: Types>(service: T::Service) -> axum::Router {
+    use axum::http::header;
     use tower_http::cors;
 
     let scope = handler::RouterScope::root(State::<T> { service });
-    routes::make(scope)
-        .into_axum()
+    let (router, api) = routes::make(scope).finish();
+
+    let document = axum::body::Bytes::from(
+        serde_json::to_vec(&api.into_document()).expect("OpenAPI document is valid JSON"),
+    );
+    let serve_document = move || {
+        let document = document.clone();
+        async move { ([(header::CONTENT_TYPE, "application/json")], document) }
+    };
+
+    router
+        .route("/openapi.json", axum::routing::get(serve_document))
         .layer(fastrace_axum::FastraceLayer)
         .layer(cors::CorsLayer::very_permissive().max_age(CORS_MAX_AGE))
 }

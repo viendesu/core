@@ -17,19 +17,50 @@ use viendesu_protocol::errors as core_errors;
 use crate::server::{
     State, Types,
     context::{Context, load_args},
-    request::{ServerRequest, extract},
+    openapi,
+    request::ServerRequest,
     response,
 };
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Verb {
+    Get,
+    Post,
+    Patch,
+    Delete,
+}
+
+impl Verb {
+    fn filter(self) -> MethodFilter {
+        match self {
+            Self::Get => MethodFilter::GET,
+            Self::Post => MethodFilter::POST,
+            Self::Patch => MethodFilter::PATCH,
+            Self::Delete => MethodFilter::DELETE,
+        }
+    }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Get => "get",
+            Self::Post => "post",
+            Self::Patch => "patch",
+            Self::Delete => "delete",
+        }
+    }
+}
+
 struct Inner<R: ServerRequest, Cx> {
     make_context: Cx,
-    method: MethodFilter,
+    verb: Verb,
     _phantom: PhantomData<R>,
 }
 
 pub struct RouterScope<T: Types> {
     router: AxumRouter,
     state: State<T>,
+    prefix: String,
+    api: openapi::Collector,
 }
 
 impl<T: Types> RouterScope<T> {
@@ -37,6 +68,8 @@ impl<T: Types> RouterScope<T> {
         Self {
             router: AxumRouter::new(),
             state,
+            prefix: String::new(),
+            api: openapi::Collector::new(),
         }
     }
 
@@ -45,7 +78,7 @@ impl<T: Types> RouterScope<T> {
     }
 
     pub fn route<R: ServerRequest, M, Cx>(
-        self,
+        mut self,
         path: &str,
         handler: FinishedHandler<R, M, T, Cx>,
     ) -> RouterScope<T>
@@ -53,16 +86,27 @@ impl<T: Types> RouterScope<T> {
         M: MakeRequest<T, R>,
         Cx: MakeContext<R>,
     {
-        let Self { mut router, state } = self;
+        let verb = handler.inner.verb;
+        self.api
+            .operation::<R>(verb, openapi::join_path(&self.prefix, path));
+
+        let Self {
+            mut router,
+            state,
+            prefix,
+            api,
+        } = self;
         router = router.route(
             path,
-            method_routing::on(
-                handler.inner.method,
-                handler.into_axum_handler(state.clone()),
-            ),
+            method_routing::on(verb.filter(), handler.into_axum_handler(state.clone())),
         );
 
-        Self { router, state }
+        Self {
+            router,
+            state,
+            prefix,
+            api,
+        }
     }
 
     pub fn nest(
@@ -70,27 +114,37 @@ impl<T: Types> RouterScope<T> {
         path: &str,
         f: impl FnOnce(RouterScope<T>) -> RouterScope<T>,
     ) -> RouterScope<T> {
+        let Self {
+            router,
+            state,
+            prefix,
+            api,
+        } = self;
+
         let nested = f(RouterScope {
             router: AxumRouter::new(),
-            state: self.state.clone(),
+            state: state.clone(),
+            prefix: format!("{prefix}{path}"),
+            api,
         });
 
-        let Self { mut router, state } = self;
-        router = router.nest(path, nested.router);
-
-        Self { router, state }
-    }
-
-    pub fn map_axum(self, f: impl FnOnce(AxumRouter) -> AxumRouter) -> Self {
-        let Self { router, state } = self;
         Self {
-            router: f(router),
+            router: router.nest(path, nested.router),
             state,
+            prefix,
+            api: nested.api,
         }
     }
 
-    pub fn into_axum(self) -> AxumRouter {
-        self.router
+    pub fn map_axum(self, f: impl FnOnce(AxumRouter) -> AxumRouter) -> Self {
+        Self {
+            router: f(self.router),
+            ..self
+        }
+    }
+
+    pub fn finish(self) -> (AxumRouter, openapi::Collector) {
+        (self.router, self.api)
     }
 }
 
@@ -119,7 +173,7 @@ impl<R: ServerRequest, M, T: Types, Cx: MakeContext<R>> FinishedHandler<R, M, T,
                 let (make_request, inner, state) = Arc::as_ref(&captures);
                 let Inner {
                     make_context,
-                    method: _,
+                    verb: _,
                     _phantom: _,
                 } = inner;
 
@@ -190,7 +244,7 @@ impl<R: ServerRequest, Cx: MakeContext<R>> Handler<R, Cx> {
     pub fn get(make_context: Cx) -> Handler<R, Cx> {
         Self(Inner {
             make_context,
-            method: MethodFilter::GET,
+            verb: Verb::Get,
             _phantom: PhantomData,
         })
     }
@@ -198,7 +252,7 @@ impl<R: ServerRequest, Cx: MakeContext<R>> Handler<R, Cx> {
     pub fn post(make_context: Cx) -> Handler<R, Cx> {
         Self(Inner {
             make_context,
-            method: MethodFilter::POST,
+            verb: Verb::Post,
             _phantom: PhantomData,
         })
     }
@@ -206,7 +260,7 @@ impl<R: ServerRequest, Cx: MakeContext<R>> Handler<R, Cx> {
     pub fn patch(make_context: Cx) -> Handler<R, Cx> {
         Self(Inner {
             make_context,
-            method: MethodFilter::PATCH,
+            verb: Verb::Patch,
             _phantom: PhantomData,
         })
     }
@@ -214,7 +268,7 @@ impl<R: ServerRequest, Cx: MakeContext<R>> Handler<R, Cx> {
     pub fn delete(make_context: Cx) -> Handler<R, Cx> {
         Self(Inner {
             make_context,
-            method: MethodFilter::DELETE,
+            verb: Verb::Delete,
             _phantom: PhantomData,
         })
     }
