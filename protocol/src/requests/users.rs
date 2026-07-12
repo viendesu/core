@@ -212,5 +212,7 @@ pub mod sign_up {
     pub enum Err {
         #[display("{_0}")]
         AlreadyTaken(#[from] errors::AlreadyTaken),
+        #[display("{_0}")]
+        SignUpDisabled(#[from] errors::SignUpDisabled),
     }
 }

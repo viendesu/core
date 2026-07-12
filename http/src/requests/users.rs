@@ -48,7 +48,7 @@ status_code::map!(reqs::confirm_sign_up::Err => [NotFoundOrCompleted, InvalidSig
 
 impl_req!(reqs::sign_up::Args => [reqs::sign_up::Ok; reqs::sign_up::Err]);
 status_code::direct!(reqs::sign_up::Ok => CREATED);
-status_code::map!(reqs::sign_up::Err => [AlreadyTaken]);
+status_code::map!(reqs::sign_up::Err => [AlreadyTaken, SignUpDisabled]);
 
 impl_req!(reqs::update::Update => [reqs::update::Ok; reqs::update::Err]);
 status_code::direct!(reqs::update::Ok => OK);
@@ -62,6 +62,7 @@ const _: () = {
     direct!(InvalidPassword => FORBIDDEN);
     direct!(MustCompleteSignUp => FORBIDDEN);
     direct!(AlreadyTaken => BAD_REQUEST);
+    direct!(SignUpDisabled => FORBIDDEN);
     direct!(NotFoundOrCompleted => BAD_REQUEST);
     direct!(InvalidSignUpToken => BAD_REQUEST);
     direct!(NoSuchAuthSession => NOT_FOUND);

@@ -14,6 +14,9 @@ pub enum WhatTaken {
 #[data(error, display("passed invalid sign up token"))]
 pub struct InvalidSignUpToken;
 
+#[data(error, display("sign up is disabled"))]
+pub struct SignUpDisabled;
+
 #[data(error, display("the {what} is already taken"))]
 pub struct AlreadyTaken {
     pub what: WhatTaken,
