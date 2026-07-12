@@ -6,9 +6,15 @@
 use crate::registry::Tools;
 
 use viendesu_core::service::{
-    CallStep as _, IsSession, Session, authors::Authors as _, boards::Boards as _,
-    games::Games as _, marks::{Badges as _, Genres as _, Tags as _}, messages::Messages as _,
-    tabs::Tabs as _, threads::Threads as _, users::Users as _,
+    CallStep as _, IsSession, Session,
+    authors::Authors as _,
+    boards::Boards as _,
+    games::Games as _,
+    marks::{Badges as _, Genres as _, Tags as _},
+    messages::Messages as _,
+    tabs::Tabs as _,
+    threads::Threads as _,
+    users::Users as _,
 };
 use viendesu_protocol::requests::{authors, boards, games, marks, messages, tabs, threads, users};
 
@@ -60,8 +66,10 @@ pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
         )
         .tool(
             "search_games",
-            "Search the games catalog: text query, author filter, include/exclude filters \
-             on tags/badges/genres, sorting and pagination.",
+            "Search the games catalog. The text query matches game titles only; \
+             for theme/genre requests use include.genres_any with genre slugs \
+             (listed in the server instructions, or via list_genres). Also \
+             supports an author filter, sorting and pagination.",
             |mut s: Session<S>, args: games::search::Args| async move {
                 s.games().search().call(args).await
             },

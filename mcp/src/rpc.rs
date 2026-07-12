@@ -1,4 +1,7 @@
-use std::{fmt::Display, sync::Arc};
+use std::{
+    fmt::Display,
+    sync::{Arc, OnceLock},
+};
 
 use axum::{
     Router,
@@ -12,22 +15,30 @@ use axum::{
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use viendesu_core::service::{SessionMaker, SessionOf, authz::Authentication as _};
-use viendesu_protocol::types::session;
+use viendesu_core::service::{
+    CallStep as _, SessionMaker, SessionOf, authz::Authentication as _, marks::Genres as _,
+};
+use viendesu_protocol::{requests::marks, types::session};
 
 use crate::registry::{CallOutcome, Tools};
 
 /// Newest first.
 const SUPPORTED_VERSIONS: &[&str] = &["2025-06-18", "2025-03-26"];
 
-const INSTRUCTIONS: &str = "VienDesu! is a visual novel catalog and forum. \
-    Search and inspect games, authors, users and forum content. \
+/// Base instructions; [`initialize`] appends the genre slugs to them.
+const INSTRUCTIONS: &str = "VienDesu! is a Russian visual novel catalog and forum. \
+    To find games by theme or genre, call search_games with genre slugs in \
+    include.genres_any. Its text query matches game titles only — never put \
+    themes or genres there. \
     Authenticated requests (Authorization: Bearer <session token>) may also \
     act on behalf of the user, subject to their role.";
 
 struct McpState<S: SessionMaker> {
     service: S,
     tools: Tools<SessionOf<S>>,
+    /// Instructions with the genre slugs embedded, built on first
+    /// successful fetch in [`initialize`].
+    instructions: OnceLock<String>,
 }
 
 /// MCP endpoint at `/` over the streamable HTTP transport (stateless:
@@ -38,7 +49,11 @@ where
     S: SessionMaker + Send + Sync + 'static,
     SessionOf<S>: 'static,
 {
-    let state = Arc::new(McpState { service, tools });
+    let state = Arc::new(McpState {
+        service,
+        tools,
+        instructions: OnceLock::new(),
+    });
     Router::new().route(
         "/",
         routing::post(handle::<S>)
@@ -81,19 +96,40 @@ where
     };
 
     match method.as_str() {
-        "initialize" => initialize(id, &msg.params),
+        "initialize" => initialize(&state, id, &msg.params).await,
         "ping" => rpc_ok(id, json!({})),
         "tools/list" => rpc_ok(id, json!({ "tools": state.tools.list() })),
         "tools/call" => call(&state, &headers, id, msg.params).await,
-        _ => rpc_err(id, -32601, format_args!("method {method:?} is not supported")),
+        _ => rpc_err(
+            id,
+            -32601,
+            format_args!("method {method:?} is not supported"),
+        ),
     }
 }
 
-fn initialize(id: Value, params: &Value) -> Response {
+async fn initialize<S>(state: &McpState<S>, id: Value, params: &Value) -> Response
+where
+    S: SessionMaker + Send + Sync + 'static,
+{
     let requested = params.get("protocolVersion").and_then(Value::as_str);
     let version = requested
         .filter(|v| SUPPORTED_VERSIONS.contains(v))
         .unwrap_or(SUPPORTED_VERSIONS[0]);
+
+    // Genres are effectively static, so they are embedded into the
+    // instructions once: clients get the valid slugs upfront instead of
+    // discovering them via list_genres. On fetch failure fall back to
+    // the base text and retry on the next initialize.
+    let instructions = match state.instructions.get() {
+        Some(cached) => cached.as_str(),
+        None => match genre_slugs(&state.service).await {
+            Some(slugs) => state
+                .instructions
+                .get_or_init(|| format!("{INSTRUCTIONS} Genre slugs: {slugs}.")),
+            None => INSTRUCTIONS,
+        },
+    };
 
     rpc_ok(
         id,
@@ -105,17 +141,35 @@ fn initialize(id: Value, params: &Value) -> Response {
                 "title": "VienDesu!",
                 "version": env!("CARGO_PKG_VERSION"),
             },
-            "instructions": INSTRUCTIONS,
+            "instructions": instructions,
         }),
     )
 }
 
-async fn call<S>(
-    state: &McpState<S>,
-    headers: &HeaderMap,
-    id: Value,
-    params: Value,
-) -> Response
+async fn genre_slugs<S: SessionMaker>(service: &S) -> Option<String> {
+    let mut session = service.make_session().await.ok()?;
+    let marks::list_genres::Ok { genres } = session
+        .genres()
+        .list()
+        .call(marks::list_genres::Args {})
+        .await
+        .ok()?;
+
+    if genres.is_empty() {
+        return None;
+    }
+
+    let mut list = String::new();
+    for genre in &genres {
+        if !list.is_empty() {
+            list.push_str(", ");
+        }
+        list.push_str(genre.as_str());
+    }
+    Some(list)
+}
+
+async fn call<S>(state: &McpState<S>, headers: &HeaderMap, id: Value, params: Value) -> Response
 where
     S: SessionMaker + Send + Sync + 'static,
     SessionOf<S>: 'static,
@@ -127,7 +181,10 @@ where
         arguments: Value,
     }
 
-    let Params { name, mut arguments } = match serde_json::from_value(params) {
+    let Params {
+        name,
+        mut arguments,
+    } = match serde_json::from_value(params) {
         Ok(p) => p,
         Err(e) => return rpc_err(id, -32602, format_args!("invalid params: {e}")),
     };
@@ -144,7 +201,10 @@ where
         Ok(None) => {}
         Ok(Some(token)) => {
             if let Err(e) = session.authz().authenticate(token).await {
-                return rpc_ok(id, tool_error_text(format_args!("authentication failed: {e}")));
+                return rpc_ok(
+                    id,
+                    tool_error_text(format_args!("authentication failed: {e}")),
+                );
             }
         }
         Err(e) => return rpc_ok(id, tool_error_text(e)),

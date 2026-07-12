@@ -60,7 +60,12 @@ impl<S> Tools<S> {
     }
 
     /// Invokes tool `name` with JSON `args`, `None` if there is no such tool.
-    pub fn call(&self, name: &str, session: Session<S>, args: Value) -> Option<BoxFut<CallOutcome>> {
+    pub fn call(
+        &self,
+        name: &str,
+        session: Session<S>,
+        args: Value,
+    ) -> Option<BoxFut<CallOutcome>> {
         let entry = self.entries.iter().find(|e| e.name == name)?;
         Some((entry.run)(session, args))
     }

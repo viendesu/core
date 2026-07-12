@@ -10,9 +10,17 @@ use serde_json::{Value, json};
 use tower::util::ServiceExt;
 
 use viendesu_core::service::{
-    AuxFut, CallStep, RespFut, Session, SessionMaker, authors::Authors, authz::Authentication,
-    boards::Boards, games::Games, marks::{Badges, Genres, Tags}, messages::Messages, tabs::Tabs,
-    threads::Threads, uploads::Uploads, users::Users,
+    AuxFut, CallStep, RespFut, Session, SessionMaker,
+    authors::Authors,
+    authz::Authentication,
+    boards::Boards,
+    games::Games,
+    marks::{Badges, Genres, Tags},
+    messages::Messages,
+    tabs::Tabs,
+    threads::Threads,
+    uploads::Uploads,
+    users::Users,
 };
 use viendesu_protocol::requests;
 
@@ -109,8 +117,33 @@ impl Messages for Mock {
     }
 }
 
+struct ListGenres;
+
+impl CallStep<requests::marks::list_genres::Args> for ListGenres {
+    type Ok = requests::marks::list_genres::Ok;
+    type Err = requests::marks::list_genres::Err;
+
+    fn call(&mut self, _: requests::marks::list_genres::Args) -> impl RespFut<Self::Ok, Self::Err> {
+        async {
+            Ok(requests::marks::list_genres::Ok {
+                genres: ["romance".parse().unwrap(), "horror".parse().unwrap()]
+                    .try_into()
+                    .unwrap(),
+            })
+        }
+    }
+}
+
 impl Genres for Mock {
-    stub!(list => requests::marks::list_genres);
+    fn list(
+        &mut self,
+    ) -> impl CallStep<
+        requests::marks::list_genres::Args,
+        Ok = requests::marks::list_genres::Ok,
+        Err = requests::marks::list_genres::Err,
+    > {
+        ListGenres
+    }
 }
 
 impl Badges for Mock {
@@ -164,10 +197,7 @@ impl Uploads for Mock {
 }
 
 impl Authentication for Mock {
-    fn authenticate(
-        &mut self,
-        _: viendesu_protocol::types::session::Token,
-    ) -> impl AuxFut<()> {
+    fn authenticate(&mut self, _: viendesu_protocol::types::session::Token) -> impl AuxFut<()> {
         async { Ok(()) }
     }
 
@@ -236,6 +266,12 @@ async fn initialize() {
     assert_eq!(result["protocolVersion"], "2025-06-18");
     assert_eq!(result["serverInfo"]["name"], "viendesu");
     assert!(result["capabilities"]["tools"].is_object());
+    assert!(
+        result["instructions"]
+            .as_str()
+            .unwrap()
+            .ends_with("Genre slugs: romance, horror.")
+    );
 }
 
 #[tokio::test]
@@ -271,7 +307,10 @@ async fn tools_list() {
 async fn tools_call() {
     let (status, resp) = post(
         router(),
-        rpc("tools/call", json!({ "name": "list_tags", "arguments": {} })),
+        rpc(
+            "tools/call",
+            json!({ "name": "list_tags", "arguments": {} }),
+        ),
     )
     .await;
 
