@@ -2,11 +2,7 @@ use eva::data;
 
 use crate::requests::status_code;
 
-use viendesu_protocol::{
-    errors,
-    requests::messages as reqs,
-    types::message,
-};
+use viendesu_protocol::{errors, requests::messages as reqs, types::message};
 
 #[data]
 pub struct Edit {

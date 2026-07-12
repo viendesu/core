@@ -16,11 +16,7 @@ fn update_requests_allow_omitted_patch_fields() {
     parses::<requests::authors::update::Update>("{}");
     parses::<requests::users::update::Update>("{}");
 
-    let thread = entity::Id::from_parts(
-        0,
-        1,
-        entity::Metadata::new(entity::Kind::Thread, 0),
-    );
+    let thread = entity::Id::from_parts(0, 1, entity::Metadata::new(entity::Kind::Thread, 0));
     parses::<requests::threads::edit::Args>(&format!(r#"{{"thread":"{thread}"}}"#));
 }
 

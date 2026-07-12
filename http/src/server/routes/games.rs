@@ -18,18 +18,20 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
         )
         .route(
             "/{game_id}",
-            patch(async |mut session: SessionOf<T>, mut ctx: Ctx<update::Update>| {
-                let id: game::Id = ctx.path().await?;
+            patch(
+                async |mut session: SessionOf<T>, mut ctx: Ctx<update::Update>| {
+                    let id: game::Id = ctx.path().await?;
 
-                session
-                    .games()
-                    .update()
-                    .call(update::Args {
-                        id,
-                        update: ctx.request,
-                    })
-                    .await
-            }),
+                    session
+                        .games()
+                        .update()
+                        .call(update::Args {
+                            id,
+                            update: ctx.request,
+                        })
+                        .await
+                },
+            ),
         )
         .route(
             "/{game_id}",

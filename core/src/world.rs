@@ -1,8 +1,4 @@
-use eva::{
-    auto_impl, rand,
-    rand::Rng as _,
-    time::Clock,
-};
+use eva::{auto_impl, rand, rand::Rng as _, time::Clock};
 
 use viendesu_protocol::types::entity::{Id, IsEntityId, Kind, Metadata, SingleKindId};
 
