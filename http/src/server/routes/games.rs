@@ -1,10 +1,13 @@
 use super::*;
 
-use crate::requests::games::Get;
+use crate::requests::{blogs::Get as GetBlog, games::Get};
 
-use viendesu_core::service::games::Games;
+use viendesu_core::service::{blogs::Blogs, games::Games};
 use viendesu_protocol::{
-    requests::games::{create, get, search, update},
+    requests::{
+        blogs as blog_reqs,
+        games::{create, get, search, update},
+    },
     types::{author, game},
 };
 
@@ -69,6 +72,40 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                         resolve_marks,
                         latest_articles,
                         game: game::Selector::FullyQualified(game::FullyQualified { author, slug }),
+                    })
+                    .await
+            }),
+        )
+        .route(
+            "/{game_id}/blog",
+            get(async |mut session: SessionOf<T>, mut ctx: Ctx<GetBlog>| {
+                let game_id: game::Id = ctx.path().await?;
+                let GetBlog {} = ctx.request;
+
+                session
+                    .blogs()
+                    .get()
+                    .call(blog_reqs::get::Args {
+                        blog: game::Selector::from(game_id).into(),
+                    })
+                    .await
+            }),
+        )
+        .route(
+            "/{author}/{slug}/blog",
+            get(async |mut session: SessionOf<T>, mut ctx: Ctx<GetBlog>| {
+                let (author, slug) = ctx.path::<(author::Selector, game::Slug)>().await?;
+                let GetBlog {} = ctx.request;
+
+                session
+                    .blogs()
+                    .get()
+                    .call(blog_reqs::get::Args {
+                        blog: game::Selector::FullyQualified(game::FullyQualified {
+                            author,
+                            slug,
+                        })
+                        .into(),
                     })
                     .await
             }),

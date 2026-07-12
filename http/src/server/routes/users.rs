@@ -1,9 +1,16 @@
 use super::*;
 
-use crate::requests::users::{ConfirmSignUp, FinishAuth, Get};
-use viendesu_core::service::{tabs::Tabs, users::Users};
-use viendesu_protocol::requests::users::{
-    begin_auth, check_auth, confirm_sign_up, finish_auth, get, search, sign_in, sign_up, update,
+use crate::requests::{
+    blogs::Get as GetBlog,
+    users::{ConfirmSignUp, FinishAuth, Get},
+};
+use viendesu_core::service::{blogs::Blogs, tabs::Tabs, users::Users};
+use viendesu_protocol::requests::{
+    blogs as blog_reqs,
+    users::{
+        begin_auth, check_auth, confirm_sign_up, finish_auth, get, search, sign_in, sign_up,
+        update,
+    },
 };
 
 pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
@@ -23,6 +30,20 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                     .get()
                     .call(get::Args {
                         user: Some(selector),
+                    })
+                    .await
+            }),
+        )
+        .route(
+            "/{sel}/blog",
+            get(async |mut session: SessionOf<T>, mut ctx: Ctx<GetBlog>| {
+                let selector: user::Selector = ctx.path().await?;
+                let GetBlog {} = ctx.request;
+                session
+                    .blogs()
+                    .get()
+                    .call(blog_reqs::get::Args {
+                        blog: selector.into(),
                     })
                     .await
             }),

@@ -23,7 +23,7 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                 session
                     .blogs()
                     .get()
-                    .call(blog_reqs::get::Args { blog })
+                    .call(blog_reqs::get::Args { blog: blog.into() })
                     .await
             }),
         )

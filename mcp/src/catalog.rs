@@ -110,8 +110,9 @@ pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
         )
         .tool(
             "get_blog",
-            "Get a blog by id. A blog's id is the id of the entity that authors \
-             it (user, author or game); the response resolves that owner.",
+            "Get a blog by selector: its id, or a selector of its owner (user, \
+             author or game). A blog's id is the id of the entity that authors \
+             it; the response resolves that owner.",
             |mut s: Session<S>, args: blogs::get::Args| async move {
                 s.blogs().get().call(args).await
             },

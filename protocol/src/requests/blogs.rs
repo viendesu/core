@@ -10,7 +10,7 @@ pub mod get {
 
     #[data]
     pub struct Args {
-        pub blog: blog::Id,
+        pub blog: blog::Selector,
     }
 
     #[data]
@@ -23,6 +23,12 @@ pub mod get {
     pub enum Err {
         #[display("{_0}")]
         NotFound(#[from] errors::blogs::NotFound),
+        #[display("{_0}")]
+        NoSuchUser(#[from] errors::users::NotFound),
+        #[display("{_0}")]
+        NoSuchAuthor(#[from] errors::authors::NotFound),
+        #[display("{_0}")]
+        NoSuchGame(#[from] errors::games::NotFound),
     }
 }
 

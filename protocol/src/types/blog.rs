@@ -23,6 +23,20 @@ impl Id {
     }
 }
 
+/// How a blog can be selected: directly by its id, or by a selector
+/// of its owner.
+#[data]
+pub enum Selector {
+    #[display("{_0}")]
+    Id(#[from] Id),
+    #[display("{_0}")]
+    User(#[from] user::Selector),
+    #[display("{_0}")]
+    Author(#[from] author::Selector),
+    #[display("{_0}")]
+    Game(#[from] game::Selector),
+}
+
 /// The game whose blog it is, along with the author that owns the game:
 /// the author's `owner` is the user allowed to edit the blog.
 #[data]

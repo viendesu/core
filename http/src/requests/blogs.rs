@@ -14,7 +14,7 @@ pub struct Get {}
 impl_req!(Get => [reqs::get::Ok; reqs::get::Err]);
 
 status_code::direct!(reqs::get::Ok => OK);
-status_code::map!(reqs::get::Err => [NotFound]);
+status_code::map!(reqs::get::Err => [NotFound, NoSuchUser, NoSuchAuthor, NoSuchGame]);
 
 #[data]
 pub struct Edit {

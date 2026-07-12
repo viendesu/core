@@ -1,10 +1,13 @@
 use super::*;
 
-use crate::requests::authors::Get;
+use crate::requests::{authors::Get, blogs::Get as GetBlog};
 
-use viendesu_core::service::authors::Authors;
+use viendesu_core::service::{authors::Authors, blogs::Blogs};
 use viendesu_protocol::{
-    requests::authors::{create, get, search, update},
+    requests::{
+        authors::{create, get, search, update},
+        blogs as blog_reqs,
+    },
     types::author,
 };
 
@@ -29,6 +32,21 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                 let Get {} = ctx.request;
 
                 session.authors().get().call(get::Args { author }).await
+            }),
+        )
+        .route(
+            "/{selector}/blog",
+            get(async |mut session: SessionOf<T>, mut ctx: Ctx<GetBlog>| {
+                let author: author::Selector = ctx.path().await?;
+                let GetBlog {} = ctx.request;
+
+                session
+                    .blogs()
+                    .get()
+                    .call(blog_reqs::get::Args {
+                        blog: author.into(),
+                    })
+                    .await
             }),
         )
         .route(
