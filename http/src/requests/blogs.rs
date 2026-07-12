@@ -25,11 +25,12 @@ pub struct Edit {
 impl_req!(Edit => [reqs::edit::Ok; reqs::edit::Err]);
 
 status_code::direct!(reqs::edit::Ok => OK);
-status_code::map!(reqs::edit::Err => [NotFound]);
+status_code::map!(reqs::edit::Err => [NotFound, NotAnOwner]);
 
 const _: () = {
     use errors::blogs::*;
     use status_code::direct;
 
+    direct!(NotAnOwner => FORBIDDEN);
     direct!(NotFound => NOT_FOUND);
 };

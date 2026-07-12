@@ -94,7 +94,6 @@ pub enum Kind {
     Message,
     Thread,
     Board,
-    Blog,
     Article,
 }
 

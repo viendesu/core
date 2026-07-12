@@ -22,7 +22,7 @@ pub struct Delete {}
 impl_req!(Delete => [reqs::delete::Ok; reqs::delete::Err]);
 
 status_code::direct!(reqs::delete::Ok => OK);
-status_code::map!(reqs::delete::Err => [NotFound]);
+status_code::map!(reqs::delete::Err => [NotFound, NotAnOwner]);
 
 #[data]
 pub struct Edit {
@@ -56,7 +56,7 @@ pub struct Create {
 impl_req!(Create => [reqs::create::Ok; reqs::create::Err]);
 
 status_code::direct!(reqs::create::Ok => CREATED);
-status_code::map!(reqs::create::Err => [NoSuchBlog]);
+status_code::map!(reqs::create::Err => [NoSuchBlog, NotAnOwner]);
 
 const _: () = {
     use errors::articles::*;

@@ -3,14 +3,13 @@ use eva::{data, str};
 use crate::types::{author, entity, game, user};
 
 entity::define_eid! {
-    pub struct Id(Blog);
+    /// Identifier of a blog: the id of the entity that authors it. A blog is
+    /// not a separate entity, it's a facet of its owner, so the owner kind is
+    /// readable straight from the id.
+    pub struct Id(User | Author | Game);
 }
 
-entity::define_eid! {
-    pub struct OwnerId(User | Author | Game);
-}
-
-impl OwnerId {
+impl Id {
     pub const fn user(user: user::Id) -> Self {
         Self(user.raw_id())
     }
@@ -21,63 +20,6 @@ impl OwnerId {
 
     pub const fn game(game: game::Id) -> Self {
         Self(game.raw_id())
-    }
-
-    /// Blog of this entity: the same identifier with the kind swapped to
-    /// [`entity::Kind::Blog`], everything else (data bits included) preserved.
-    pub const fn blog(self) -> Id {
-        let raw = self.raw_id();
-        let meta = entity::Metadata::new(entity::Kind::Blog, raw.metadata().data());
-
-        match Id::from_generic(raw.with_metadata(meta)) {
-            Some(id) => id,
-            None => unreachable!(),
-        }
-    }
-}
-
-impl Id {
-    /// All entity ids this blog may belong to: the same identifier with the
-    /// kind swapped to each owner kind. Which one is the actual owner is up
-    /// to storage — only one of them exists.
-    pub const fn possible_owners(self) -> [OwnerId; 3] {
-        const fn as_owner(raw: entity::Id, kind: entity::Kind, data: u8) -> OwnerId {
-            let meta = entity::Metadata::new(kind, data);
-            match OwnerId::from_generic(raw.with_metadata(meta)) {
-                Some(id) => id,
-                None => unreachable!(),
-            }
-        }
-
-        let raw = self.raw_id();
-        let data = raw.metadata().data();
-
-        [
-            as_owner(raw, entity::Kind::User, data),
-            as_owner(raw, entity::Kind::Author, data),
-            as_owner(raw, entity::Kind::Game, data),
-        ]
-    }
-}
-
-#[data(copy)]
-#[serde(untagged)]
-pub enum Selector {
-    /// The blog id itself.
-    #[display("{_0}")]
-    Id(#[from] Id),
-    /// Id of the owning entity, the blog id is derived from it.
-    #[display("{_0}")]
-    Owner(#[from] OwnerId),
-}
-
-impl Selector {
-    /// Normalize to the blog id.
-    pub const fn id(self) -> Id {
-        match self {
-            Self::Id(id) => id,
-            Self::Owner(owner) => owner.blog(),
-        }
     }
 }
 

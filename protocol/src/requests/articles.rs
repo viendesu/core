@@ -19,7 +19,7 @@ pub mod search {
 
     #[data]
     pub struct Args {
-        pub blog: blog::Selector,
+        pub blog: blog::Id,
         #[serde(default)]
         pub limit: Limit,
         // TODO(MKS-6): implement better pagination.
@@ -64,7 +64,7 @@ pub mod create {
 
     #[data]
     pub struct Args {
-        pub blog: blog::Selector,
+        pub blog: blog::Id,
         pub title: article::Title,
         pub content: article::Content,
     }
@@ -78,6 +78,8 @@ pub mod create {
     pub enum Err {
         #[display("{_0}")]
         NoSuchBlog(#[from] errors::blogs::NotFound),
+        #[display("{_0}")]
+        NotAnOwner(#[from] errors::blogs::NotAnOwner),
     }
 }
 
@@ -119,5 +121,7 @@ pub mod delete {
     pub enum Err {
         #[display("{_0}")]
         NotFound(#[from] errors::articles::NotFound),
+        #[display("{_0}")]
+        NotAnOwner(#[from] errors::articles::NotAnOwner),
     }
 }

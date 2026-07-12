@@ -18,7 +18,7 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
         .route(
             "/{sel}",
             get(async |mut session: SessionOf<T>, mut ctx: Ctx<GetBlog>| {
-                let blog: blog::Selector = ctx.path().await?;
+                let blog: blog::Id = ctx.path().await?;
                 let GetBlog {} = ctx.request;
                 session
                     .blogs()
@@ -30,7 +30,7 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
         .route(
             "/{sel}",
             patch(async |mut session: SessionOf<T>, mut ctx: Ctx<EditBlog>| {
-                let blog: blog::Selector = ctx.path().await?;
+                let blog: blog::Id = ctx.path().await?;
                 let EditBlog { title, description } = ctx.request;
                 session
                     .blogs()
@@ -49,7 +49,7 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                     "/",
                     get(
                         async |mut session: SessionOf<T>, mut ctx: Ctx<SearchArticles>| {
-                            let blog: blog::Selector = ctx.path().await?;
+                            let blog: blog::Id = ctx.path().await?;
                             let SearchArticles { limit, before } = ctx.request;
                             session
                                 .articles()
@@ -67,7 +67,7 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                     "/",
                     post(
                         async |mut session: SessionOf<T>, mut ctx: Ctx<CreateArticle>| {
-                            let blog: blog::Selector = ctx.path().await?;
+                            let blog: blog::Id = ctx.path().await?;
                             let CreateArticle { title, content } = ctx.request;
                             session
                                 .articles()

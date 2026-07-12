@@ -108,7 +108,8 @@ pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
         )
         .tool(
             "get_blog",
-            "Get a blog by its id or by the id of the owning entity (user, author or game).",
+            "Get a blog by id. A blog's id is the id of the entity that authors \
+             it (user, author or game).",
             |mut s: Session<S>, args: blogs::get::Args| async move {
                 s.blogs().get().call(args).await
             },
@@ -225,8 +226,9 @@ pub fn management<S: IsSession + 'static>() -> Tools<S> {
         )
         .tool(
             "edit_blog",
-            "Edit a blog. The blog is selected by its id or by the id of the owning \
-             entity; all fields are optional patches, omitted fields are kept as is.",
+            "Edit a blog, selected by the id of the owning entity. All fields are \
+             optional patches, omitted fields are kept as is; patching every field \
+             to null deletes the blog metadata entirely.",
             |mut s: Session<S>, args: blogs::edit::Args| async move {
                 s.blogs().edit().call(args).await
             },

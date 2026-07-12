@@ -10,7 +10,7 @@ pub mod get {
 
     #[data]
     pub struct Args {
-        pub blog: blog::Selector,
+        pub blog: blog::Id,
     }
 
     #[data]
@@ -25,13 +25,15 @@ pub mod get {
     }
 }
 
+// `edit` with every field patched to `None` deletes the blog metadata
+// entirely: a blog with empty metadata is not stored.
 pub mod edit {
     use super::*;
 
     #[serde_with::apply(Patch => #[serde(default)])]
     #[data]
     pub struct Args {
-        pub blog: blog::Selector,
+        pub blog: blog::Id,
         pub title: Patch<Option<blog::Title>>,
         pub description: Patch<Option<blog::Description>>,
     }
@@ -43,5 +45,7 @@ pub mod edit {
     pub enum Err {
         #[display("{_0}")]
         NotFound(#[from] errors::blogs::NotFound),
+        #[display("{_0}")]
+        NotAnOwner(#[from] errors::blogs::NotAnOwner),
     }
 }

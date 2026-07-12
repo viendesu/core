@@ -36,5 +36,4 @@ pub struct Article {
     pub title: Title,
     pub content: Content,
     pub created_at: Timestamp,
-    pub edited_at: Option<Timestamp>,
 }
