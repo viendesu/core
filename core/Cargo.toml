@@ -13,8 +13,4 @@ viendesu-protocol.workspace = true
 
 eva.workspace = true
 
-eyre.workspace = true
-
-futures.workspace = true
-
 tokio = { workspace = true, features = ["rt"], optional = true }
