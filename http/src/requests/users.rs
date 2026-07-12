@@ -52,7 +52,7 @@ status_code::map!(reqs::sign_up::Err => [AlreadyTaken, SignUpDisabled]);
 
 impl_req!(reqs::update::Update => [reqs::update::Ok; reqs::update::Err]);
 status_code::direct!(reqs::update::Ok => OK);
-status_code::map!(reqs::update::Err => [NotFound]);
+status_code::map!(reqs::update::Err => [NotFound, FileNotFound, UnexpectedFileClass]);
 
 const _: () = {
     use errors::users::*;

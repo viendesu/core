@@ -30,6 +30,34 @@ pub struct Overuploading {
     pub expected: u64,
 }
 
+#[data(
+    error,
+    copy,
+    display(
+        "uploaded less than requested: {} out of {}",
+        ByteSize::b(*got),
+        ByteSize::b(*expected)
+    )
+)]
+pub struct Underuploading {
+    pub expected: u64,
+    pub got: u64,
+}
+
+#[data(
+    error,
+    copy,
+    display(
+        "file is too big: {} exceeds the {} limit",
+        ByteSize::b(*size),
+        ByteSize::b(*max)
+    )
+)]
+pub struct FileTooBig {
+    pub size: u64,
+    pub max: u64,
+}
+
 #[data(error, copy, display("simultaneous upload quota exceeded: {}/{}", ByteSize::b(*in_progress), ByteSize::b(*quota)))]
 pub struct SimUpQuotaExceeded {
     pub in_progress: u64,

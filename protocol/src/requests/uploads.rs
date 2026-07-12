@@ -66,6 +66,8 @@ pub mod start {
         QuotaExceeded(#[from] errors::uploads::QuotaExceeded),
         #[display("{_0}")]
         SimUpQuotaExceeded(#[from] errors::uploads::SimUpQuotaExceeded),
+        #[display("{_0}")]
+        FileTooBig(#[from] errors::uploads::FileTooBig),
     }
 }
 
@@ -95,6 +97,8 @@ pub mod finish {
         HashMismatch(#[from] errors::uploads::HashMismatch),
         #[display("{_0}")]
         Overuploading(#[from] errors::uploads::Overuploading),
+        #[display("{_0}")]
+        Underuploading(#[from] errors::uploads::Underuploading),
     }
 }
 

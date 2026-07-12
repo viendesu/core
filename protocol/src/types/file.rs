@@ -36,7 +36,16 @@ pub enum Class {
     GameFile(game_file::GameFileInfo),
 }
 
-const BASE_NAME_PAT: &str = r"[^/\]+";
+impl Class {
+    pub const fn kind(&self) -> ClassKind {
+        match self {
+            Self::Image(..) => ClassKind::Image,
+            Self::GameFile(..) => ClassKind::GameFile,
+        }
+    }
+}
+
+const BASE_NAME_PAT: &str = r"[^/\\]+";
 
 /// Base file name.
 #[str(custom)]
@@ -67,7 +76,7 @@ impl FromStr for BaseName {
         if s.len() >= Self::MAX_LEN {
             return Err(str::ParseError::Length);
         }
-        if s.chars().any(|c| matches!(c, '/' | '\\')) {
+        if s.chars().any(|c| matches!(c, '/' | '\\') || c.is_control()) {
             return Err(str::ParseError::Char);
         }
 

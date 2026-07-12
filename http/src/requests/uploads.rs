@@ -25,7 +25,7 @@ pub struct Start {
 
 impl_req!(Start => [reqs::start::Ok; reqs::start::Err]);
 status_code::direct!(reqs::start::Ok => CREATED);
-status_code::map!(reqs::start::Err => [QuotaExceeded, SimUpQuotaExceeded]);
+status_code::map!(reqs::start::Err => [QuotaExceeded, SimUpQuotaExceeded, FileTooBig]);
 
 pub struct Finish {
     pub id: upload::Id,
@@ -38,6 +38,7 @@ status_code::map!(reqs::finish::Err => [
     HashMismatch,
     NotFound,
     Overuploading,
+    Underuploading,
     ConcurrentUploadInProgress,
     UnableToValidateClass,
 ]);
@@ -58,6 +59,8 @@ const _: () = {
     direct!(QuotaExceeded => TOO_MANY_REQUESTS);
     direct!(SimUpQuotaExceeded => TOO_MANY_REQUESTS);
     direct!(Overuploading => BAD_REQUEST);
+    direct!(Underuploading => BAD_REQUEST);
+    direct!(FileTooBig => PAYLOAD_TOO_LARGE);
     direct!(HashMismatch => BAD_REQUEST);
     direct!(UnableToValidateClass => BAD_REQUEST);
 };

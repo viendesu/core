@@ -50,6 +50,8 @@ pub mod update {
         UnexpectedFileClass(#[from] errors::files::UnexpectedFileClass),
         #[display("{_0}")]
         InvalidImage(#[from] errors::files::InvalidImage),
+        #[display("{_0}")]
+        FileNotFound(#[from] errors::files::NotFound),
     }
 }
 
@@ -188,6 +190,8 @@ pub mod create {
         UnexpectedFileClass(#[from] errors::files::UnexpectedFileClass),
         #[display("{_0}")]
         InvalidImage(#[from] errors::files::InvalidImage),
+        #[display("{_0}")]
+        FileNotFound(#[from] errors::files::NotFound),
     }
 }
 

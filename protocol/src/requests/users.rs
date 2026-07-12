@@ -122,6 +122,10 @@ pub mod update {
     pub enum Err {
         #[display("{_0}")]
         NotFound(#[from] errors::NotFound),
+        #[display("{_0}")]
+        FileNotFound(#[from] crate::errors::files::NotFound),
+        #[display("{_0}")]
+        UnexpectedFileClass(#[from] crate::errors::files::UnexpectedFileClass),
     }
 }
 

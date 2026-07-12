@@ -15,6 +15,7 @@ status_code::map!(reqs::update::Err => [
     NoSuchTag,
     UnexpectedFileClass,
     InvalidImage,
+    FileNotFound,
 ]);
 
 impl_req!(reqs::search::Args => [reqs::search::Ok; reqs::search::Err]);
@@ -43,6 +44,7 @@ status_code::map!(reqs::create::Err => [
     NoSuchTag,
     UnexpectedFileClass,
     InvalidImage,
+    FileNotFound,
 ]);
 
 const _: () = {
