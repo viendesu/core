@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     errors,
-    types::{Patch, True, author, file, game, mark, user},
+    types::{Patch, True, article, author, file, game, mark, user},
 };
 
 use eva::{array, data, int, str, time};
@@ -202,6 +202,9 @@ pub mod get {
     pub struct Args {
         pub game: game::Selector,
         pub resolve_marks: bool,
+        /// Also fetch the few latest articles of the game's blog.
+        #[serde(default)]
+        pub latest_articles: bool,
     }
 
     #[data]
@@ -214,6 +217,10 @@ pub mod get {
         pub marks: game::Marks,
         pub authors: HashMap<author::Id, author::Mini>,
         pub users: HashMap<user::Id, user::Mini>,
+        /// Latest articles of the game's blog, newest first.
+        /// Empty unless requested via `latest_articles`.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        pub latest_articles: Vec<article::Mini>,
     }
 
     #[data(error)]

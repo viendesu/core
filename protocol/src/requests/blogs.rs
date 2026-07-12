@@ -16,6 +16,7 @@ pub mod get {
     #[data]
     pub struct Ok {
         pub blog: blog::Blog,
+        pub owner: blog::Owner,
     }
 
     #[data(error)]

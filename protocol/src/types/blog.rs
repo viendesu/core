@@ -23,6 +23,22 @@ impl Id {
     }
 }
 
+/// The game whose blog it is, along with the author that owns the game:
+/// the author's `owner` is the user allowed to edit the blog.
+#[data]
+pub struct GameOwner {
+    pub game: game::Mini,
+    pub author: author::Mini,
+}
+
+/// Resolved owner of a blog. The kind matches the kind of the blog id.
+#[data]
+pub enum Owner {
+    User(user::Mini),
+    Author(author::Mini),
+    Game(GameOwner),
+}
+
 #[str(newtype)]
 pub struct Title(str::CompactString);
 

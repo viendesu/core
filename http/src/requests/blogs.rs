@@ -18,7 +18,9 @@ status_code::map!(reqs::get::Err => [NotFound]);
 
 #[data]
 pub struct Edit {
+    #[serde(default)]
     pub title: Patch<Option<blog::Title>>,
+    #[serde(default)]
     pub description: Patch<Option<blog::Description>>,
 }
 

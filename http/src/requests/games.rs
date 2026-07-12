@@ -27,6 +27,8 @@ status_code::map!(reqs::search::Err => [NoSuchAuthor]);
 pub struct Get {
     #[serde(default)]
     pub resolve_marks: bool,
+    #[serde(default)]
+    pub latest_articles: bool,
 }
 
 impl_req!(Get => [reqs::get::Ok; reqs::get::Err]);

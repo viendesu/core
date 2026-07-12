@@ -26,7 +26,9 @@ status_code::map!(reqs::delete::Err => [NotFound, NotAnOwner]);
 
 #[data]
 pub struct Edit {
+    #[serde(default)]
     pub title: Patch<article::Title>,
+    #[serde(default)]
     pub content: Patch<article::Content>,
 }
 

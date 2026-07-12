@@ -63,7 +63,9 @@ pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
         .tool(
             "get_game",
             "Get a game by selector (id or author + slug). \
-             Set `resolve_marks` to also resolve tag/genre/badge names.",
+             Set `resolve_marks` to also resolve tag/genre/badge names, \
+             `latest_articles` to also fetch the latest articles of the \
+             game's blog.",
             |mut s: Session<S>, args: games::get::Args| async move {
                 s.games().get().call(args).await
             },
@@ -109,7 +111,7 @@ pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
         .tool(
             "get_blog",
             "Get a blog by id. A blog's id is the id of the entity that authors \
-             it (user, author or game).",
+             it (user, author or game); the response resolves that owner.",
             |mut s: Session<S>, args: blogs::get::Args| async move {
                 s.blogs().get().call(args).await
             },

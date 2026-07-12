@@ -127,6 +127,18 @@ pub struct Game {
     pub badges: mark::Badges,
 }
 
+/// Game miniature: enough to render a link to the game.
+#[data]
+pub struct Mini {
+    pub id: Id,
+    pub title: Title,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub slug: Option<Slug>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thumbnail: Option<file::Id>,
+    pub author: author::Id,
+}
+
 #[data(copy)]
 pub struct MeanRating {
     /// Mean value of all ratings.

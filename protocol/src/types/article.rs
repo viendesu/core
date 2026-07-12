@@ -21,6 +21,14 @@ pub struct Title(str::CompactString);
 #[str(newtype)]
 pub struct Content(str::CompactString);
 
+/// Article miniature: enough to render a link to the article.
+#[data]
+pub struct Mini {
+    pub id: Id,
+    pub title: Title,
+    pub created_at: Timestamp,
+}
+
 #[data]
 pub struct Brief {
     pub id: Id,

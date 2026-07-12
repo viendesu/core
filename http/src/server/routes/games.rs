@@ -37,7 +37,10 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
             "/{game_id}",
             get(async |mut session: SessionOf<T>, mut ctx: Ctx<Get>| {
                 let game_id: game::Id = ctx.path().await?;
-                let Get { resolve_marks } = ctx.request;
+                let Get {
+                    resolve_marks,
+                    latest_articles,
+                } = ctx.request;
 
                 session
                     .games()
@@ -45,6 +48,7 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                     .call(get::Args {
                         game: game_id.into(),
                         resolve_marks,
+                        latest_articles,
                     })
                     .await
             }),
@@ -53,13 +57,17 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
             "/{author}/{slug}",
             get(async |mut session: SessionOf<T>, mut ctx: Ctx<Get>| {
                 let (author, slug) = ctx.path::<(author::Selector, game::Slug)>().await?;
-                let Get { resolve_marks } = ctx.request;
+                let Get {
+                    resolve_marks,
+                    latest_articles,
+                } = ctx.request;
 
                 session
                     .games()
                     .get()
                     .call(get::Args {
                         resolve_marks,
+                        latest_articles,
                         game: game::Selector::FullyQualified(game::FullyQualified { author, slug }),
                     })
                     .await
