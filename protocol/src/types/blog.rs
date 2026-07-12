@@ -36,6 +36,30 @@ impl OwnerId {
     }
 }
 
+impl Id {
+    /// All entity ids this blog may belong to: the same identifier with the
+    /// kind swapped to each owner kind. Which one is the actual owner is up
+    /// to storage — only one of them exists.
+    pub const fn possible_owners(self) -> [OwnerId; 3] {
+        const fn as_owner(raw: entity::Id, kind: entity::Kind, data: u8) -> OwnerId {
+            let meta = entity::Metadata::new(kind, data);
+            match OwnerId::from_generic(raw.with_metadata(meta)) {
+                Some(id) => id,
+                None => unreachable!(),
+            }
+        }
+
+        let raw = self.raw_id();
+        let data = raw.metadata().data();
+
+        [
+            as_owner(raw, entity::Kind::User, data),
+            as_owner(raw, entity::Kind::Author, data),
+            as_owner(raw, entity::Kind::Game, data),
+        ]
+    }
+}
+
 #[data(copy)]
 #[serde(untagged)]
 pub enum Selector {

@@ -23,9 +23,10 @@ pub mod search {
         #[serde(default)]
         pub limit: Limit,
         // TODO(MKS-6): implement better pagination.
-        pub after: Option<article::Id>,
+        pub before: Option<article::Id>,
     }
 
+    /// Results are ordered newest first.
     #[data]
     pub struct Ok {
         pub results: Vec<article::Brief>,

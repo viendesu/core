@@ -39,7 +39,7 @@ status_code::map!(reqs::edit::Err => [NotFound, NotAnOwner]);
 pub struct Search {
     #[serde(default)]
     pub limit: reqs::search::Limit,
-    pub after: Option<article::Id>,
+    pub before: Option<article::Id>,
 }
 
 impl_req!(Search => [reqs::search::Ok; reqs::search::Err]);

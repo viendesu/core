@@ -122,7 +122,7 @@ pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
         )
         .tool(
             "list_articles",
-            "List articles of a blog, paginated via `after` + `limit`.",
+            "List articles of a blog, newest first, paginated via `before` + `limit`.",
             |mut s: Session<S>, args: articles::search::Args| async move {
                 s.articles().search().call(args).await
             },

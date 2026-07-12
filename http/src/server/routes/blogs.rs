@@ -50,11 +50,15 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                     get(
                         async |mut session: SessionOf<T>, mut ctx: Ctx<SearchArticles>| {
                             let blog: blog::Selector = ctx.path().await?;
-                            let SearchArticles { limit, after } = ctx.request;
+                            let SearchArticles { limit, before } = ctx.request;
                             session
                                 .articles()
                                 .search()
-                                .call(article_reqs::search::Args { blog, limit, after })
+                                .call(article_reqs::search::Args {
+                                    blog,
+                                    limit,
+                                    before,
+                                })
                                 .await
                         },
                     ),
