@@ -45,6 +45,10 @@ pub mod get {
     #[data]
     pub struct Args {
         pub article: article::Selector,
+        /// Only match the article if it belongs to this blog. Everything
+        /// else is `NotFound`.
+        #[serde(default)]
+        pub blog: Option<blog::Selector>,
     }
 
     #[data]

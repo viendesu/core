@@ -1,14 +1,14 @@
 use super::*;
 
-use crate::requests::{blogs::Get as GetBlog, games::Get};
+use crate::requests::{articles::Get as GetArticle, blogs::Get as GetBlog, games::Get};
 
-use viendesu_core::service::{blogs::Blogs, games::Games};
+use viendesu_core::service::{articles::Articles, blogs::Blogs, games::Games};
 use viendesu_protocol::{
     requests::{
-        blogs as blog_reqs,
+        articles as article_reqs, blogs as blog_reqs,
         games::{create, get, search, update},
     },
-    types::{author, game},
+    types::{article, author, game},
 };
 
 pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
@@ -109,6 +109,51 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                     })
                     .await
             }),
+        )
+        .route(
+            "/{game_id}/blog/articles/{article_sel}",
+            get(
+                async |mut session: SessionOf<T>, mut ctx: Ctx<GetArticle>| {
+                    let (game_id, article) =
+                        ctx.path::<(game::Id, article::Selector)>().await?;
+                    let GetArticle {} = ctx.request;
+
+                    session
+                        .articles()
+                        .get()
+                        .call(article_reqs::get::Args {
+                            article,
+                            blog: Some(game::Selector::from(game_id).into()),
+                        })
+                        .await
+                },
+            ),
+        )
+        .route(
+            "/{author}/{slug}/blog/articles/{article_sel}",
+            get(
+                async |mut session: SessionOf<T>, mut ctx: Ctx<GetArticle>| {
+                    let (author, slug, article) = ctx
+                        .path::<(author::Selector, game::Slug, article::Selector)>()
+                        .await?;
+                    let GetArticle {} = ctx.request;
+
+                    session
+                        .articles()
+                        .get()
+                        .call(article_reqs::get::Args {
+                            article,
+                            blog: Some(
+                                game::Selector::FullyQualified(game::FullyQualified {
+                                    author,
+                                    slug,
+                                })
+                                .into(),
+                            ),
+                        })
+                        .await
+                },
+            ),
         )
         .route(
             "/search",

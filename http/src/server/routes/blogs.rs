@@ -94,7 +94,10 @@ pub fn articles<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                 session
                     .articles()
                     .get()
-                    .call(article_reqs::get::Args { article })
+                    .call(article_reqs::get::Args {
+                        article,
+                        blog: None,
+                    })
                     .await
             }),
         )

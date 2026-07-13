@@ -119,7 +119,9 @@ pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
         )
         .tool(
             "get_article",
-            "Get a blog article by id. The content is CommonMark.",
+            "Get a blog article by id. The content is CommonMark. Pass \
+             `blog` (a blog selector) to only match the article if it \
+             belongs to that blog.",
             |mut s: Session<S>, args: articles::get::Args| async move {
                 s.articles().get().call(args).await
             },

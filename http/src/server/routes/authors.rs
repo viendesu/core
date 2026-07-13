@@ -1,14 +1,15 @@
 use super::*;
 
-use crate::requests::{authors::Get, blogs::Get as GetBlog};
+use crate::requests::{articles::Get as GetArticle, authors::Get, blogs::Get as GetBlog};
 
-use viendesu_core::service::{authors::Authors, blogs::Blogs};
+use viendesu_core::service::{articles::Articles, authors::Authors, blogs::Blogs};
 use viendesu_protocol::{
     requests::{
+        articles as article_reqs,
         authors::{create, get, search, update},
         blogs as blog_reqs,
     },
-    types::author,
+    types::{article, author},
 };
 
 pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
@@ -48,6 +49,25 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                     })
                     .await
             }),
+        )
+        .route(
+            "/{selector}/blog/articles/{article_sel}",
+            get(
+                async |mut session: SessionOf<T>, mut ctx: Ctx<GetArticle>| {
+                    let (author, article) =
+                        ctx.path::<(author::Selector, article::Selector)>().await?;
+                    let GetArticle {} = ctx.request;
+
+                    session
+                        .articles()
+                        .get()
+                        .call(article_reqs::get::Args {
+                            article,
+                            blog: Some(author.into()),
+                        })
+                        .await
+                },
+            ),
         )
         .route(
             "/{selector}",

@@ -1,16 +1,20 @@
 use super::*;
 
 use crate::requests::{
+    articles::Get as GetArticle,
     blogs::Get as GetBlog,
     users::{ConfirmSignUp, FinishAuth, Get},
 };
-use viendesu_core::service::{blogs::Blogs, tabs::Tabs, users::Users};
-use viendesu_protocol::requests::{
-    blogs as blog_reqs,
-    users::{
-        begin_auth, check_auth, confirm_sign_up, finish_auth, get, search, sign_in, sign_up,
-        update,
+use viendesu_core::service::{articles::Articles, blogs::Blogs, tabs::Tabs, users::Users};
+use viendesu_protocol::{
+    requests::{
+        articles as article_reqs, blogs as blog_reqs,
+        users::{
+            begin_auth, check_auth, confirm_sign_up, finish_auth, get, search, sign_in, sign_up,
+            update,
+        },
     },
+    types::article,
 };
 
 pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
@@ -47,6 +51,24 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                     })
                     .await
             }),
+        )
+        .route(
+            "/{sel}/blog/articles/{article_sel}",
+            get(
+                async |mut session: SessionOf<T>, mut ctx: Ctx<GetArticle>| {
+                    let (user, article) =
+                        ctx.path::<(user::Selector, article::Selector)>().await?;
+                    let GetArticle {} = ctx.request;
+                    session
+                        .articles()
+                        .get()
+                        .call(article_reqs::get::Args {
+                            article,
+                            blog: Some(user.into()),
+                        })
+                        .await
+                },
+            ),
         )
         .route(
             "/begin-auth",
