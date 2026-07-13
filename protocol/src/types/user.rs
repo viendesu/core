@@ -46,6 +46,8 @@ pub enum AuthMethod {
 pub struct Mini {
     pub id: Id,
     pub nickname: Nickname,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<DisplayName>,
     pub role: Role,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pfp: Option<file::Id>,
