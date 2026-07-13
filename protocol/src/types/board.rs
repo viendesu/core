@@ -9,7 +9,7 @@ use eva::{
     zst_error,
 };
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize, de};
+use serde::{Serialize, de};
 
 #[data(copy)]
 #[serde(untagged)]
@@ -56,7 +56,7 @@ impl Slugged {
     where
         D: serde::Deserializer<'de>,
     {
-        let s = <&'de str as Deserialize<'de>>::deserialize(deserializer)?;
+        let s = crate::de::cow_str(deserializer)?;
         if let Some(rest) = s.strip_prefix('@') {
             let slug: Slug = rest.parse().map_err(de::Error::custom)?;
             Ok(slug)

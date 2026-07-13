@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use eva::{data, str, str::CompactString, time::Date, zst_error};
 
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize, de};
+use serde::{Serialize, de};
 
 use crate::types::{entity, file, slug, user};
 
@@ -47,7 +47,7 @@ impl SlugStr {
     }
 
     fn deserialize<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Slug, D::Error> {
-        let s = <&'de str as Deserialize<'de>>::deserialize(deserializer)?;
+        let s = crate::de::cow_str(deserializer)?;
         if let Some(slug) = s.strip_prefix('@') {
             slug.parse().map_err(de::Error::custom)
         } else {

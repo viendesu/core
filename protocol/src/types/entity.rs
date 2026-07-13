@@ -540,8 +540,8 @@ impl<'de> Deserialize<'de> for Id {
         D: serde::Deserializer<'de>,
     {
         let res = if deserializer.is_human_readable() {
-            let s = <&'de str as Deserialize<'de>>::deserialize(deserializer)?;
-            Self::parse(StrId::from_str(s).map_err(de::Error::custom)?)
+            let s = crate::de::cow_str(deserializer)?;
+            Self::parse(StrId::from_str(&s).map_err(de::Error::custom)?)
                 .map_err(de::Error::custom)?
         } else {
             let repr = u128::deserialize(deserializer)?;
@@ -743,6 +743,15 @@ mod tests {
 
     const KIND: Kind = Kind::MIN;
     const META: Metadata = Metadata::new(KIND, 0);
+
+    // `from_value` cannot hand out borrowed strings, so the human-readable
+    // path must accept transient ones (MCP deserializes arguments this way).
+    #[test]
+    fn deserializes_from_json_value() {
+        let id = Id::from_parts(0, 1, META);
+        let value = serde_json::to_value(id).unwrap();
+        assert_eq!(serde_json::from_value::<Id>(value).unwrap(), id);
+    }
 
     #[test]
     fn steps_simple_ordering() {

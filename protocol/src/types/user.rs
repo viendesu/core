@@ -100,7 +100,7 @@ impl schemars::JsonSchema for NicknameStr {
 
 impl NicknameStr {
     pub fn deserialize<'de, D: serde::Deserializer<'de>>(des: D) -> Result<Nickname, D::Error> {
-        let s = <&'de str as serde::Deserialize<'de>>::deserialize(des)?;
+        let s = crate::de::cow_str(des)?;
         if let Some(nickname) = s.strip_prefix('@') {
             nickname.parse().map_err(de::Error::custom)
         } else {
