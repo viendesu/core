@@ -101,9 +101,67 @@ entity::define_eid! {
     pub struct Id(Author);
 }
 
+pub type SlugInner = slug::Slug<23>;
+
 /// Author's slug.
-#[str(newtype, copy)]
-pub struct Slug(pub slug::Slug<23>);
+#[str(custom, copy)]
+pub struct Slug(SlugInner);
+
+const RESERVED_SLUGS: &[&str] = &["forum"];
+
+#[data(error, copy)]
+pub enum SlugParseError {
+    #[display("{_0}")]
+    Malformed(#[from] slug::ParseError),
+    #[display("this slug is reserved")]
+    Reserved,
+}
+
+impl std::str::FromStr for Slug {
+    type Err = SlugParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let inner: SlugInner = s.parse()?;
+        if RESERVED_SLUGS
+            .iter()
+            .any(|r| inner.as_str().eq_ignore_ascii_case(r))
+        {
+            return Err(SlugParseError::Reserved);
+        }
+
+        Ok(Self(inner))
+    }
+}
+
+impl Slug {
+    pub const fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+
+    pub const fn inner(&self) -> SlugInner {
+        self.0
+    }
+}
+
+impl str::HasPattern for Slug {
+    fn pat_into(buf: &mut String) {
+        <SlugInner as str::HasPattern>::pat_into(buf);
+    }
+}
+
+impl JsonSchema for Slug {
+    fn schema_id() -> Cow<'static, str> {
+        Cow::Borrowed(concat!(module_path!(), "::Slug"))
+    }
+
+    fn schema_name() -> Cow<'static, str> {
+        Cow::Borrowed("AuthorSlug")
+    }
+
+    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        <SlugInner as JsonSchema>::json_schema(generator)
+    }
+}
 
 /// Author's title.
 #[str(newtype)]
