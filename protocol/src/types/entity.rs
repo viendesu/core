@@ -162,6 +162,8 @@ pub enum ParseError {
     Length,
     #[display("invalid char")]
     Char,
+    #[display("value is out of the representable range")]
+    Range,
 }
 
 impl From<str::ParseError> for ParseError {
@@ -169,6 +171,7 @@ impl From<str::ParseError> for ParseError {
         match value {
             str::ParseError::Length => Self::Length,
             str::ParseError::Char => Self::Char,
+            str::ParseError::Range => Self::Range,
         }
     }
 }
