@@ -175,7 +175,13 @@ pub enum RatingValue {}
 
 /// Short, url-safe human-readable identifier of the game.
 #[str(newtype, copy)]
-pub struct Slug(pub slug::LowerSlug<31>);
+pub struct Slug(slug::LowerSlug<31>);
+
+impl Slug {
+    pub const fn inner(&self) -> slug::LowerSlug<31> {
+        self.0
+    }
+}
 
 /// Game title.
 #[str(newtype)]
