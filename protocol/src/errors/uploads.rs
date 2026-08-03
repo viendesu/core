@@ -1,10 +1,18 @@
 use eva::{bytesize::ByteSize, data};
 
-use crate::types::{file, upload};
+use crate::{
+    types::{file, upload},
+    uploads::AbortReason,
+};
 
 #[data(error, display("unable to validate file class: {error}"))]
 pub struct UnableToValidateClass {
     pub error: String,
+}
+
+#[data(error, display("upload aborted: {reason}"))]
+pub struct Aborted {
+    pub reason: AbortReason,
 }
 
 #[data(error, copy, display("someone is finishing file already"))]

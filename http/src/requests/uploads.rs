@@ -41,6 +41,7 @@ status_code::map!(reqs::finish::Err => [
     Underuploading,
     ConcurrentUploadInProgress,
     UnableToValidateClass,
+    Aborted,
 ]);
 
 #[data]
@@ -63,4 +64,5 @@ const _: () = {
     direct!(FileTooBig => PAYLOAD_TOO_LARGE);
     direct!(HashMismatch => BAD_REQUEST);
     direct!(UnableToValidateClass => BAD_REQUEST);
+    direct!(Aborted => BAD_REQUEST);
 };

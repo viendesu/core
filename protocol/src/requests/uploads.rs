@@ -99,6 +99,8 @@ pub mod finish {
         Overuploading(#[from] errors::uploads::Overuploading),
         #[display("{_0}")]
         Underuploading(#[from] errors::uploads::Underuploading),
+        #[display("{_0}")]
+        Aborted(#[from] errors::uploads::Aborted),
     }
 }
 
