@@ -88,7 +88,9 @@ pub mod search {
         /// By game release date.
         ReleaseDate { after: Option<SortKey<time::Date>> },
         /// By publish on site date.
-        PublishedAt { after: Option<SortKey<time::Date>> },
+        PublishedAt {
+            after: Option<SortKey<time::Timestamp>>,
+        },
         /// By game rating.
         Rating {
             after: Option<SortKey<game::RatingValue>>,
