@@ -74,6 +74,12 @@ pub mod update {
     pub enum Err {
         #[display("{_0}")]
         NotFound(#[from] NotFound),
+        #[display("{_0}")]
+        AlreadyExists(#[from] AlreadyExists),
+        #[display("{_0}")]
+        FileNotFound(#[from] errors::files::NotFound),
+        #[display("{_0}")]
+        UnexpectedFileClass(#[from] errors::files::UnexpectedFileClass),
     }
 }
 
@@ -128,5 +134,9 @@ pub mod create {
         AlreadyExists(#[from] AlreadyExists),
         #[display("{_0}")]
         NoSuchUser(#[from] users_errors::NotFound),
+        #[display("{_0}")]
+        FileNotFound(#[from] errors::files::NotFound),
+        #[display("{_0}")]
+        UnexpectedFileClass(#[from] errors::files::UnexpectedFileClass),
     }
 }

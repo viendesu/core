@@ -126,6 +126,8 @@ pub mod update {
         FileNotFound(#[from] crate::errors::files::NotFound),
         #[display("{_0}")]
         UnexpectedFileClass(#[from] crate::errors::files::UnexpectedFileClass),
+        #[display("{_0}")]
+        AlreadyTaken(#[from] errors::AlreadyTaken),
     }
 }
 

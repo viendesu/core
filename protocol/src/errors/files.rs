@@ -2,7 +2,7 @@ use eva::data;
 
 use crate::types::file;
 
-#[data(display("unexpected file class for this type of operation"), error)]
+#[data(display("unexpected file class: expected {expected}, got {got}"), error)]
 pub struct UnexpectedFileClass {
     pub expected: file::ClassKind,
     pub got: file::ClassKind,

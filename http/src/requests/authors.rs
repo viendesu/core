@@ -12,12 +12,12 @@ status_code::map!(reqs::search::Err => [NoSuchUser]);
 impl_req!(reqs::update::Update => [reqs::update::Ok; reqs::update::Err]);
 
 status_code::direct!(reqs::update::Ok => OK);
-status_code::map!(reqs::update::Err => [NotFound]);
+status_code::map!(reqs::update::Err => [NotFound, AlreadyExists, FileNotFound, UnexpectedFileClass]);
 
 impl_req!(reqs::create::Args => [reqs::create::Ok; reqs::create::Err]);
 
 status_code::direct!(reqs::create::Ok => OK);
-status_code::map!(reqs::create::Err => [NotFound, AlreadyExists, NoSuchUser]);
+status_code::map!(reqs::create::Err => [NotFound, AlreadyExists, NoSuchUser, FileNotFound, UnexpectedFileClass]);
 
 #[data]
 pub struct Get {}
