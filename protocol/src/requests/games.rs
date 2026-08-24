@@ -7,6 +7,29 @@ use crate::{
 
 use eva::{array, data, int, str, time};
 
+pub mod rate {
+    use super::*;
+
+    #[data]
+    pub struct Args {
+        pub id: game::Id,
+        /// `None` retracts the caller's vote.
+        pub rating: Option<game::RatingValue>,
+    }
+
+    #[data]
+    pub struct Ok {
+        /// Rating of the game after the vote.
+        pub rating: game::MeanRating,
+    }
+
+    #[data(error)]
+    pub enum Err {
+        #[display("{_0}")]
+        NotFound(#[from] errors::games::NotFound),
+    }
+}
+
 pub mod update {
     use super::*;
 
@@ -216,6 +239,9 @@ pub mod get {
         // - comments
         // - downloads
         pub game: game::Game,
+        /// The caller's own rating of the game, if any.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub own_rating: Option<game::RatingValue>,
         pub marks: game::Marks,
         pub authors: HashMap<author::Id, author::Mini>,
         pub users: HashMap<user::Id, user::Mini>,

@@ -1,7 +1,7 @@
 use super::*;
 
 use viendesu_protocol::{
-    requests::games::{create, get, search, update},
+    requests::games::{create, get, rate, search, update},
     types::game::Selector,
 };
 
@@ -40,6 +40,12 @@ impl Games for HttpClient {
 
     fn create(&mut self) -> impl CallStep<create::Args, Ok = create::Ok, Err = create::Err> {
         self.do_call(Method::POST, |args: create::Args| ("/games".into(), args))
+    }
+
+    fn rate(&mut self) -> impl CallStep<rate::Args, Ok = rate::Ok, Err = rate::Err> {
+        self.do_call(Method::PUT, |rate::Args { id, rating }| {
+            (c!("/games/{id}/rating"), requests::Rate { rating })
+        })
     }
 
     fn update(&mut self) -> impl CallStep<update::Args, Ok = update::Ok, Err = update::Err> {

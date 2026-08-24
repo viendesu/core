@@ -5,5 +5,6 @@ service_trait! {
 
         create,
         update,
+        rate,
     }
 }

@@ -1,12 +1,16 @@
 use super::*;
 
-use crate::requests::{articles::Get as GetArticle, blogs::Get as GetBlog, games::Get};
+use crate::requests::{
+    articles::Get as GetArticle,
+    blogs::Get as GetBlog,
+    games::{Get, Rate},
+};
 
 use viendesu_core::service::{articles::Articles, blogs::Blogs, games::Games};
 use viendesu_protocol::{
     requests::{
         articles as article_reqs, blogs as blog_reqs,
-        games::{create, get, search, update},
+        games::{create, get, rate, search, update},
     },
     types::{article, author, game},
 };
@@ -74,6 +78,15 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                         game: game::Selector::FullyQualified(game::FullyQualified { author, slug }),
                     })
                     .await
+            }),
+        )
+        .route(
+            "/{game_id}/rating",
+            put(async |mut session: SessionOf<T>, mut ctx: Ctx<Rate>| {
+                let id: game::Id = ctx.path().await?;
+                let Rate { rating } = ctx.request;
+
+                session.games().rate().call(rate::Args { id, rating }).await
             }),
         )
         .route(

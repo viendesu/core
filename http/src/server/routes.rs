@@ -1,7 +1,7 @@
 use crate::server::{
     Types,
     context::Context as Ctx,
-    handler::{RouterScope, delete, get, patch, post},
+    handler::{RouterScope, delete, get, patch, post, put},
 };
 
 use viendesu_core::service::{CallStep, Session, SessionOf as SessionOfService};

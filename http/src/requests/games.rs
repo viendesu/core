@@ -2,7 +2,7 @@ use eva::data;
 
 use crate::requests::status_code;
 
-use viendesu_protocol::{errors, requests::games as reqs};
+use viendesu_protocol::{errors, requests::games as reqs, types::game};
 
 impl_req!(reqs::update::Update => [reqs::update::Ok; reqs::update::Err]);
 
@@ -35,6 +35,18 @@ impl_req!(Get => [reqs::get::Ok; reqs::get::Err]);
 
 status_code::direct!(reqs::get::Ok => OK);
 status_code::map!(reqs::get::Err => [NotFound, NoSuchAuthor]);
+
+#[data]
+pub struct Rate {
+    /// `None` retracts the caller's vote.
+    #[serde(default)]
+    pub rating: Option<game::RatingValue>,
+}
+
+impl_req!(Rate => [reqs::rate::Ok; reqs::rate::Err]);
+
+status_code::direct!(reqs::rate::Ok => OK);
+status_code::map!(reqs::rate::Err => [NotFound]);
 
 impl_req!(reqs::create::Args => [reqs::create::Ok; reqs::create::Err]);
 

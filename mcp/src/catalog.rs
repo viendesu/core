@@ -192,6 +192,15 @@ pub fn management<S: IsSession + 'static>() -> Tools<S> {
             },
         )
         .tool(
+            "rate_game",
+            "Rate a game by id on a 0-100 scale, replacing the caller's \
+             previous vote; omit `rating` to retract it. Returns the game's \
+             recalculated mean rating. Requires authentication.",
+            |mut s: Session<S>, args: games::rate::Args| async move {
+                s.games().rate().call(args).await
+            },
+        )
+        .tool(
             "create_author",
             "Create a game author (developer/circle). Omit `owner` to own it yourself; \
              creating authors for other users requires at least the admin role.",

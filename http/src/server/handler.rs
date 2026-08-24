@@ -26,6 +26,7 @@ use crate::server::{
 pub enum Verb {
     Get,
     Post,
+    Put,
     Patch,
     Delete,
 }
@@ -35,6 +36,7 @@ impl Verb {
         match self {
             Self::Get => MethodFilter::GET,
             Self::Post => MethodFilter::POST,
+            Self::Put => MethodFilter::PUT,
             Self::Patch => MethodFilter::PATCH,
             Self::Delete => MethodFilter::DELETE,
         }
@@ -44,6 +46,7 @@ impl Verb {
         match self {
             Self::Get => "get",
             Self::Post => "post",
+            Self::Put => "put",
             Self::Patch => "patch",
             Self::Delete => "delete",
         }
@@ -220,6 +223,15 @@ where
     Handler::post(load_args::<R>).exec(make_request)
 }
 
+pub fn put<R, T, M>(make_request: M) -> FinishedHandler<R, M, T, impl MakeContext<R>>
+where
+    R: ServerRequest + for<'de> Deserialize<'de>,
+    T: Types,
+    M: MakeRequest<T, R>,
+{
+    Handler::put(load_args::<R>).exec(make_request)
+}
+
 pub fn patch<R, T, M>(make_request: M) -> FinishedHandler<R, M, T, impl MakeContext<R>>
 where
     R: ServerRequest + for<'de> Deserialize<'de>,
@@ -253,6 +265,14 @@ impl<R: ServerRequest, Cx: MakeContext<R>> Handler<R, Cx> {
         Self(Inner {
             make_context,
             verb: Verb::Post,
+            _phantom: PhantomData,
+        })
+    }
+
+    pub fn put(make_context: Cx) -> Handler<R, Cx> {
+        Self(Inner {
+            make_context,
+            verb: Verb::Put,
             _phantom: PhantomData,
         })
     }

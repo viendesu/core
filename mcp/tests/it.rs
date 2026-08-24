@@ -88,6 +88,7 @@ impl Games for Mock {
         search => requests::games::search,
         create => requests::games::create,
         update => requests::games::update,
+        rate => requests::games::rate,
     }
 }
 
