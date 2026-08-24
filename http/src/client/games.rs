@@ -14,13 +14,20 @@ impl Games for HttpClient {
             |get::Args {
                  game,
                  resolve_marks,
+                 latest_articles,
              }| {
                 let path = match game {
                     Selector::Id(id) => c!("/games/{}", id.to_str()),
                     Selector::FullyQualified(fq) => c!("/games/{}/{}", fq.author, fq.slug),
                 };
 
-                (path, requests::Get { resolve_marks })
+                (
+                    path,
+                    requests::Get {
+                        resolve_marks,
+                        latest_articles,
+                    },
+                )
             },
         )
     }
