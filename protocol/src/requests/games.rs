@@ -251,9 +251,10 @@ pub mod get {
         /// Empty unless requested via `latest_articles`.
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         pub latest_articles: Vec<article::Mini>,
-        /// First page of the game's top-level comments, newest first;
-        /// continue via `comments::list` with `before`. Their authors are
-        /// merged into `users`. Empty unless requested via `comments`.
+        /// First page of the game's top-level comments, most liked first;
+        /// continue via `comments::list` with `before` + `before_likes`.
+        /// Their authors are merged into `users`. Empty unless requested
+        /// via `comments`.
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         pub comments: Vec<comment::Comment>,
     }

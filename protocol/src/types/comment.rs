@@ -29,9 +29,9 @@ impl Default for Limit {
 #[derive(Default)]
 pub enum Sort {
     /// Newest first.
-    #[default]
     Recent,
     /// Most liked first, newest first on ties.
+    #[default]
     Top,
 }
 

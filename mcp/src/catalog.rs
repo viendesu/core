@@ -137,8 +137,8 @@ pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
         )
         .tool(
             "list_game_comments",
-            "List top-level comments of a game. `sort` is `Recent` (newest \
-             first, default) or `Top` (most liked first). Paginated via \
+            "List top-level comments of a game. `sort` is `Top` (most liked \
+             first, default) or `Recent` (newest first). Paginated via \
              `before` (+ `before_likes` for `Top`) + `limit`.",
             |mut s: Session<S>, args: comments::list::Args| async move {
                 s.comments().list().call(args).await
