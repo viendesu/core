@@ -50,6 +50,7 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                 let Get {
                     resolve_marks,
                     latest_articles,
+                    comments,
                 } = ctx.request;
 
                 session
@@ -59,6 +60,7 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                         game: game_id.into(),
                         resolve_marks,
                         latest_articles,
+                        comments,
                     })
                     .await
             }),
@@ -70,6 +72,7 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                 let Get {
                     resolve_marks,
                     latest_articles,
+                    comments,
                 } = ctx.request;
 
                 session
@@ -78,6 +81,7 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                     .call(get::Args {
                         resolve_marks,
                         latest_articles,
+                        comments,
                         game: game::Selector::FullyQualified(game::FullyQualified { author, slug }),
                     })
                     .await

@@ -29,6 +29,8 @@ pub struct Get {
     pub resolve_marks: bool,
     #[serde(default)]
     pub latest_articles: bool,
+    #[serde(default)]
+    pub comments: bool,
 }
 
 impl_req!(Get => [reqs::get::Ok; reqs::get::Err]);

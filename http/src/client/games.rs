@@ -15,6 +15,7 @@ impl Games for HttpClient {
                  game,
                  resolve_marks,
                  latest_articles,
+                 comments,
              }| {
                 let path = match game {
                     Selector::Id(id) => c!("/games/{}", id.to_str()),
@@ -26,6 +27,7 @@ impl Games for HttpClient {
                     requests::Get {
                         resolve_marks,
                         latest_articles,
+                        comments,
                     },
                 )
             },

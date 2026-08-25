@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     errors,
-    types::{Patch, True, article, author, file, game, mark, user},
+    types::{Patch, True, article, author, comment, file, game, mark, user},
 };
 
 use eva::{array, data, int, str, time};
@@ -230,13 +230,15 @@ pub mod get {
         /// Also fetch the few latest articles of the game's blog.
         #[serde(default)]
         pub latest_articles: bool,
+        /// Also fetch the first page of the game's top-level comments.
+        #[serde(default)]
+        pub comments: bool,
     }
 
     #[data]
     pub struct Ok {
         // TODO: include if requested
         // - translation maps.
-        // - comments
         // - downloads
         pub game: game::Game,
         /// The caller's own rating of the game, if any.
@@ -249,6 +251,11 @@ pub mod get {
         /// Empty unless requested via `latest_articles`.
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         pub latest_articles: Vec<article::Mini>,
+        /// First page of the game's top-level comments, newest first;
+        /// continue via `comments::list` with `before`. Their authors are
+        /// merged into `users`. Empty unless requested via `comments`.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        pub comments: Vec<comment::Comment>,
     }
 
     #[data(error)]

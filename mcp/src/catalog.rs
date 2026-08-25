@@ -66,7 +66,8 @@ pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
             "Get a game by selector (id or author + slug). \
              Set `resolve_marks` to also resolve tag/genre/badge names, \
              `latest_articles` to also fetch the latest articles of the \
-             game's blog.",
+             game's blog, `comments` to also fetch the first page of the \
+             game's comments.",
             |mut s: Session<S>, args: games::get::Args| async move {
                 s.games().get().call(args).await
             },
