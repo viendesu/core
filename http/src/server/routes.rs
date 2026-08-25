@@ -17,6 +17,7 @@ mod uploads;
 mod users;
 
 mod blogs;
+mod comments;
 mod forum;
 
 pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
@@ -27,6 +28,7 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
         .nest("/forum", forum::make)
         .nest("/blogs", blogs::make)
         .nest("/articles", blogs::articles)
+        .nest("/comments", comments::make)
         .nest("/uploads", uploads::make)
         .nest("/files", files::make)
         .nest("/tags", marks::tags)

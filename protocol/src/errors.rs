@@ -15,6 +15,7 @@ pub mod tabs;
 
 pub mod auth;
 pub mod authors;
+pub mod comments;
 pub mod files;
 pub mod games;
 pub mod uploads;

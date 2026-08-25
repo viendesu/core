@@ -71,6 +71,7 @@ pub mod threads;
 
 pub mod articles;
 pub mod blogs;
+pub mod comments;
 
 pub mod authors;
 pub mod games;
@@ -111,6 +112,8 @@ domains! {
 
     blogs: blogs::Blogs,
     articles: articles::Articles,
+
+    comments: comments::Comments,
 
     authz: authz::Authentication,
 

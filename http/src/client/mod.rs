@@ -15,6 +15,7 @@ use viendesu_core::service::{
     authz::Authentication,
     blogs::Blogs,
     boards::Boards,
+    comments::Comments,
     games::Games,
     marks::{Badges, Genres, Tags},
     messages::Messages,
@@ -37,6 +38,7 @@ mod threads;
 
 mod articles;
 mod blogs;
+mod comments;
 
 mod auth;
 

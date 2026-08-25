@@ -77,6 +77,7 @@ pub mod threads;
 
 pub mod articles;
 pub mod blogs;
+pub mod comments;
 
 pub mod files;
 pub mod uploads;

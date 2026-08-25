@@ -15,6 +15,7 @@ pub mod articles;
 pub mod blogs;
 
 pub mod authors;
+pub mod comments;
 pub mod files;
 pub mod games;
 pub mod uploads;

@@ -11,6 +11,7 @@ use viendesu_core::service::{
     authors::Authors as _,
     blogs::Blogs as _,
     boards::Boards as _,
+    comments::Comments as _,
     games::Games as _,
     marks::{Badges as _, Genres as _, Tags as _},
     messages::Messages as _,
@@ -19,7 +20,7 @@ use viendesu_core::service::{
     users::Users as _,
 };
 use viendesu_protocol::requests::{
-    articles, authors, blogs, boards, games, marks, messages, tabs, threads, users,
+    articles, authors, blogs, boards, comments, games, marks, messages, tabs, threads, users,
 };
 
 /// Read-only tools over all queryable domains.
@@ -131,6 +132,23 @@ pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
             "List articles of a blog, newest first, paginated via `before` + `limit`.",
             |mut s: Session<S>, args: articles::search::Args| async move {
                 s.articles().search().call(args).await
+            },
+        )
+        .tool(
+            "list_game_comments",
+            "List top-level comments of a game. `sort` is `Recent` (newest \
+             first, default) or `Top` (most liked first). Paginated via \
+             `before` (+ `before_likes` for `Top`) + `limit`.",
+            |mut s: Session<S>, args: comments::list::Args| async move {
+                s.comments().list().call(args).await
+            },
+        )
+        .tool(
+            "list_comment_replies",
+            "List replies of a top-level game comment, oldest first, \
+             paginated via `after` + `limit`.",
+            |mut s: Session<S>, args: comments::replies::Args| async move {
+                s.comments().replies().call(args).await
             },
         )
         .tool(
@@ -304,6 +322,38 @@ pub fn forum_posting<S: IsSession + 'static>() -> Tools<S> {
             "Edit a forum message. Requires authentication and ownership.",
             |mut s: Session<S>, args: messages::edit::Args| async move {
                 s.messages().edit().call(args).await
+            },
+        )
+        .tool(
+            "comment_on_game",
+            "Comment on a game, or reply to a top-level comment via `parent` \
+             (threads are one level deep). Requires authentication.",
+            |mut s: Session<S>, args: comments::create::Args| async move {
+                s.comments().create().call(args).await
+            },
+        )
+        .tool(
+            "edit_comment",
+            "Edit a game comment. Requires authentication and ownership.",
+            |mut s: Session<S>, args: comments::edit::Args| async move {
+                s.comments().edit().call(args).await
+            },
+        )
+        .tool(
+            "delete_comment",
+            "Delete a game comment. Requires authentication and ownership. A \
+             top-level comment that has replies is tombstoned instead: its \
+             text and author are wiped, the replies stay.",
+            |mut s: Session<S>, args: comments::delete::Args| async move {
+                s.comments().delete().call(args).await
+            },
+        )
+        .tool(
+            "like_comment",
+            "Like a game comment, or retract the like via `liked: false`. \
+             Returns the comment's like count. Requires authentication.",
+            |mut s: Session<S>, args: comments::like::Args| async move {
+                s.comments().like().call(args).await
             },
         )
 }

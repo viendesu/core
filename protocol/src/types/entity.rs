@@ -95,6 +95,7 @@ pub enum Kind {
     Thread,
     Board,
     Article,
+    Comment,
 }
 
 const _: () = {
@@ -105,7 +106,7 @@ const _: () = {
 
 impl Kind {
     pub const MIN: Self = Self::Session;
-    pub const MAX: Self = Self::Article;
+    pub const MAX: Self = Self::Comment;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

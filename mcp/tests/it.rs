@@ -16,6 +16,7 @@ use viendesu_core::service::{
     authz::Authentication,
     blogs::Blogs,
     boards::Boards,
+    comments::Comments,
     games::Games,
     marks::{Badges, Genres, Tags},
     messages::Messages,
@@ -134,6 +135,17 @@ impl Articles for Mock {
         create => requests::articles::create,
         delete => requests::articles::delete,
         edit => requests::articles::edit,
+    }
+}
+
+impl Comments for Mock {
+    stub! {
+        list => requests::comments::list,
+        replies => requests::comments::replies,
+        create => requests::comments::create,
+        edit => requests::comments::edit,
+        delete => requests::comments::delete,
+        like => requests::comments::like,
     }
 }
 

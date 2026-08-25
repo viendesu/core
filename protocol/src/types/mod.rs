@@ -15,6 +15,7 @@ pub mod tab;
 pub mod author;
 pub mod user;
 
+pub mod comment;
 pub mod game;
 
 pub mod entity;

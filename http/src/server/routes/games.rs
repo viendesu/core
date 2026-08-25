@@ -3,13 +3,16 @@ use super::*;
 use crate::requests::{
     articles::Get as GetArticle,
     blogs::Get as GetBlog,
+    comments::{Create as CreateComment, List as ListComments},
     games::{Get, Rate},
 };
 
-use viendesu_core::service::{articles::Articles, blogs::Blogs, games::Games};
+use viendesu_core::service::{
+    articles::Articles, blogs::Blogs, comments::Comments, games::Games,
+};
 use viendesu_protocol::{
     requests::{
-        articles as article_reqs, blogs as blog_reqs,
+        articles as article_reqs, blogs as blog_reqs, comments as comment_reqs,
         games::{create, get, rate, search, update},
     },
     types::{article, author, game},
@@ -164,6 +167,47 @@ pub fn make<T: Types>(router: RouterScope<T>) -> RouterScope<T> {
                                 .into(),
                             ),
                         })
+                        .await
+                },
+            ),
+        )
+        .route(
+            "/{game_id}/comments",
+            get(
+                async |mut session: SessionOf<T>, mut ctx: Ctx<ListComments>| {
+                    let game: game::Id = ctx.path().await?;
+                    let ListComments {
+                        sort,
+                        before,
+                        before_likes,
+                        limit,
+                    } = ctx.request;
+
+                    session
+                        .comments()
+                        .list()
+                        .call(comment_reqs::list::Args {
+                            game,
+                            sort,
+                            before,
+                            before_likes,
+                            limit,
+                        })
+                        .await
+                },
+            ),
+        )
+        .route(
+            "/{game_id}/comments",
+            post(
+                async |mut session: SessionOf<T>, mut ctx: Ctx<CreateComment>| {
+                    let game: game::Id = ctx.path().await?;
+                    let CreateComment { text, parent } = ctx.request;
+
+                    session
+                        .comments()
+                        .create()
+                        .call(comment_reqs::create::Args { game, text, parent })
                         .await
                 },
             ),
