@@ -20,6 +20,8 @@ mod response;
 
 mod routes;
 
+pub mod rpc;
+
 /// 24 hours
 const CORS_MAX_AGE: std::time::Duration = std::time::Duration::from_secs(86400);
 
@@ -59,11 +61,18 @@ pub async fn serve(
     Ok(())
 }
 
-pub fn make_router<T: Types>(service: T::Service) -> axum::Router {
+/// REST routes, `POST /rpc` and whatever `mount` adds (e.g. `/mcp`), all behind
+/// the tracing and CORS layers — routes added after `.layer()` would not get them.
+pub fn make_router<T: Types>(
+    service: T::Service,
+    mount: impl FnOnce(axum::Router) -> axum::Router,
+) -> axum::Router {
     use axum::http::header;
     use tower_http::cors;
 
-    let scope = handler::RouterScope::root(State::<T> { service });
+    let scope = handler::RouterScope::root(State::<T> {
+        service: service.clone(),
+    });
     let (router, api) = routes::make(scope).finish();
 
     let document = axum::body::Bytes::from(
@@ -74,8 +83,11 @@ pub fn make_router<T: Types>(service: T::Service) -> axum::Router {
         async move { ([(header::CONTENT_TYPE, "application/json")], document) }
     };
 
-    router
+    let router = router
         .route("/openapi.json", axum::routing::get(serve_document))
+        .merge(rpc::router::<T>(service));
+
+    mount(router)
         .layer(fastrace_axum::FastraceLayer)
         .layer(cors::CorsLayer::very_permissive().max_age(CORS_MAX_AGE))
 }

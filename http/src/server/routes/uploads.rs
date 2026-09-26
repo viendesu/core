@@ -67,9 +67,10 @@ async fn load_upload_context(request: AxumRequest) -> Result<Ctx<Finish>, AxumRe
     }
 
     let (mut parts, body) = request.into_parts();
-    let response_format =
-        extract::response_format(&parts).map_err(|e| response::err(Default::default(), e))?;
-    let token = extract::session_token(&parts).map_err(|e| response::err(response_format, e))?;
+    let response_format = extract::response_format(&parts.headers, Default::default())
+        .map_err(|e| response::err(Default::default(), e))?;
+    let token =
+        extract::session_token(&parts.headers).map_err(|e| response::err(response_format, e))?;
     let id: upload::Id = extract::path(&mut parts)
         .await
         .map_err(|e| response::err(response_format, e))?;

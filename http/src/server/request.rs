@@ -15,7 +15,7 @@ pub struct MetaInfo {
 
 impl MetaInfo {
     pub fn gather(parts: &Parts) -> AuxResult<Self> {
-        let request_format = extract::request_format(parts)?;
+        let request_format = extract::request_format(&parts.headers)?;
 
         Ok(Self { request_format })
     }
