@@ -5,7 +5,6 @@ edition = "2024"
 
 [features]
 default = []
-client = ["format-serde", "dep:reqwest"]
 server = [
     "format-serde",
     "dep:axum",
@@ -39,5 +38,4 @@ form_urlencoded = { version = "1", optional = true }
 
 tokio = { workspace = true, optional = true }
 
-reqwest = { optional = true, version = "0.12.23", default-features = false, features = ["multipart", "stream"] }
 fastrace-axum = { optional = true, version = "0.1.3" }
