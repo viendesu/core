@@ -104,6 +104,9 @@ impl<const MAX: usize, Start: SlugPart, Rest: SlugPart> FromStr for Slug<MAX, St
         let Some((head, tail_str)) = s.split_at_checked(1) else {
             return Err(E::Length);
         };
+        if tail_str.len() > MAX {
+            return Err(E::Length);
+        }
 
         let head = Start::from_u8(head.as_bytes()[0]).ok_or(E::CharAtStart)?;
         let mut tail = [Z; MAX];
