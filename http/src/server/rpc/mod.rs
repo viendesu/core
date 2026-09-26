@@ -11,6 +11,10 @@
 //!
 //! Every dispatched call answers `200 OK`; 4xx statuses mean the body never
 //! reached the dispatcher (unsupported media type, body too large).
+//!
+//! `uploads.finish` streams bytes, so it is `POST /uploads/{id}` with a
+//! multipart body instead (see [`upload`]); it answers the same response
+//! object with `id: null`.
 
 use std::{collections::HashMap, sync::Arc};
 
@@ -23,12 +27,9 @@ use axum::{
 };
 use fastrace::{Span, future::FutureExt as _};
 
-use viendesu_core::service::{SessionMaker as _, SessionOf, authz::Authentication as _};
+use viendesu_core::service::{Session, SessionMaker as _, SessionOf, authz::Authentication as _};
 
-use crate::{
-    format::Format,
-    server::{Types, request::extract},
-};
+use crate::{format::Format, server::Types};
 
 use self::{
     envelope::Id,
@@ -36,7 +37,9 @@ use self::{
 };
 
 mod envelope;
+mod extract;
 mod methods;
+mod upload;
 
 /// Error codes of the `error.code` member.
 pub mod code {
@@ -64,11 +67,38 @@ struct RpcState<T: Types> {
 
 pub fn router<T: Types>(service: T::Service) -> axum::Router {
     let state = Arc::new(RpcState::<T> {
-        service,
+        service: service.clone(),
         methods: methods::table(),
     });
 
-    axum::Router::new().route("/rpc", routing::post(dispatch::<T>).with_state(state))
+    axum::Router::new()
+        .route("/rpc", routing::post(dispatch::<T>).with_state(state))
+        .merge(upload::router::<T>(Arc::new(service)))
+}
+
+/// A session authenticated by the `Authorization` header, or the encoded
+/// failure to answer instead.
+async fn session<T: Types>(
+    service: &T::Service,
+    headers: &HeaderMap,
+    call: &Call<'_>,
+) -> Result<Session<SessionOf<T::Service>>, Vec<u8>> {
+    let mut session = service
+        .make_session()
+        .await
+        .map_err(|aux| call.fail_aux(&aux))?;
+
+    match extract::session_token(headers) {
+        Ok(None) => {}
+        Ok(Some(token)) => session
+            .authz()
+            .authenticate(token)
+            .await
+            .map_err(|aux| call.fail_aux(&aux))?,
+        Err(aux) => return Err(call.fail(code::INVALID_REQUEST, &aux.to_string())),
+    }
+
+    Ok(session)
 }
 
 async fn dispatch<T: Types>(
@@ -82,10 +112,7 @@ async fn dispatch<T: Types>(
             "Content-Type must be application/json or application/msgpack",
         );
     };
-    let format = match extract::str_header(&headers, "accept") {
-        Ok(Some(accept)) => Format::negotiate(accept, request_format).unwrap_or(request_format),
-        _ => request_format,
-    };
+    let format = extract::response_format(&headers, request_format);
 
     let body = match body {
         Ok(body) => body,
@@ -120,22 +147,10 @@ async fn dispatch<T: Types>(
         params: request.params,
     };
     let response = async {
-        let mut session = match state.service.make_session().await {
-            Ok(session) => session,
-            Err(aux) => return call.fail_aux(&aux),
-        };
-
-        match extract::session_token(&headers) {
-            Ok(None) => {}
-            Ok(Some(token)) => {
-                if let Err(aux) = session.authz().authenticate(token).await {
-                    return call.fail_aux(&aux);
-                }
-            }
-            Err(aux) => return call.fail(code::INVALID_REQUEST, &aux.to_string()),
+        match session::<T>(&state.service, &headers, &call).await {
+            Ok(mut session) => handler(&mut session, call).await,
+            Err(failure) => failure,
         }
-
-        handler(&mut session, call).await
     }
     .in_span(Span::enter_with_local_parent(method))
     .await;

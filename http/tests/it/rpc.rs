@@ -13,7 +13,7 @@ use viendesu_protocol::types::{entity, game, session, user};
 
 use crate::mock::{Mock, Service, Types};
 
-fn raw_id(kind: entity::Kind, n: u128) -> entity::Id {
+pub fn raw_id(kind: entity::Kind, n: u128) -> entity::Id {
     entity::Id::from_parts(1_700_000, n, entity::Metadata::new(kind, 0))
 }
 
@@ -25,43 +25,43 @@ fn game_id() -> Value {
     json!(game::Id::from_generic(raw_id(entity::Kind::Game, 7)).unwrap())
 }
 
-fn token() -> session::Token {
+pub fn token() -> session::Token {
     session::Token::from_generic(raw_id(entity::Kind::Session, 29)).unwrap()
 }
 
-fn app(mock: &Mock) -> Router {
+pub fn app(mock: &Mock) -> Router {
     make_router::<Types>(Service(mock.clone()), |router| {
         router.route("/extra", get(async || "extra"))
     })
 }
 
-struct Reply {
-    status: StatusCode,
-    headers: HeaderMap,
-    body: Bytes,
+pub struct Reply {
+    pub status: StatusCode,
+    pub headers: HeaderMap,
+    pub body: Bytes,
 }
 
 impl Reply {
-    fn content_type(&self) -> &str {
+    pub fn content_type(&self) -> &str {
         self.headers[header::CONTENT_TYPE].to_str().unwrap()
     }
 
-    fn json(&self) -> Value {
+    pub fn json(&self) -> Value {
         assert_eq!(self.content_type(), "application/json");
         serde_json::from_slice(&self.body).unwrap()
     }
 
-    fn msgpack(&self) -> Value {
+    pub fn msgpack(&self) -> Value {
         assert_eq!(self.content_type(), "application/msgpack");
         rmp_serde::from_slice(&self.body).unwrap()
     }
 
-    fn error_code(&self) -> i64 {
+    pub fn error_code(&self) -> i64 {
         self.json()["error"]["code"].as_i64().unwrap()
     }
 }
 
-async fn send(mock: &Mock, request: Request<Body>) -> Reply {
+pub async fn send(mock: &Mock, request: Request<Body>) -> Reply {
     let response = app(mock).oneshot(request).await.unwrap();
     let status = response.status();
     let headers = response.headers().clone();

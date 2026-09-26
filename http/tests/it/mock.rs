@@ -6,6 +6,7 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
+use futures::StreamExt as _;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
@@ -16,6 +17,7 @@ use viendesu_protocol::{
     errors::{self, Aux, Generic},
     requests::{self, Response},
     types::session,
+    uploads::Chunk,
 };
 
 #[derive(Clone, Default)]
@@ -107,14 +109,36 @@ where
     }
 }
 
-pub struct Unmocked<O, E>(PhantomData<fn() -> (O, E)>);
+/// `uploads.finish`: drains the stream and records `{"id", "bytes", "aborted"}`.
+pub struct Finish {
+    mock: Mock,
+}
 
-impl<A: Send, O, E> CallStep<A> for Unmocked<O, E> {
-    type Ok = O;
-    type Err = E;
+impl CallStep<requests::uploads::finish::Args> for Finish {
+    type Ok = requests::uploads::finish::Ok;
+    type Err = requests::uploads::finish::Err;
 
-    fn call(&mut self, _: A) -> impl RespFut<O, E> {
-        async { Err(Generic::Aux(Aux::InternalError("not mockable".into()))) }
+    fn call(
+        &mut self,
+        requests::uploads::finish::Args { id, mut stream }: requests::uploads::finish::Args,
+    ) -> impl RespFut<Self::Ok, Self::Err> {
+        let mock = self.mock.clone();
+        async move {
+            let mut bytes = 0;
+            let mut aborted = None;
+            while let Some(chunk) = stream.next().await {
+                match chunk {
+                    Chunk::Data(data) => bytes += data.len(),
+                    Chunk::Aborted(reason) => aborted = Some(reason.to_string()),
+                }
+            }
+
+            let reply = mock.record(
+                "uploads.finish",
+                serde_json::json!({ "id": id, "bytes": bytes, "aborted": aborted }),
+            );
+            canned("uploads.finish", reply)
+        }
     }
 }
 
@@ -130,7 +154,7 @@ macro_rules! mock_method {
             Ok = requests::$module::$endpoint::Ok,
             Err = requests::$module::$endpoint::Err,
         > {
-            Unmocked(PhantomData)
+            Finish { mock: self.clone() }
         }
     };
     ([] $module:ident $method:ident [$endpoint:ident]) => {

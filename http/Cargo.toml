@@ -9,9 +9,8 @@ server = [
     "format-serde",
     "dep:axum",
     "dep:tower-http",
-    "dep:serde_urlencoded",
-    "dep:form_urlencoded",
     "dep:fastrace",
+    "dep:futures",
     "eva/tokio",
     "tokio/net",
     "dep:fastrace-axum"
@@ -21,21 +20,17 @@ format-serde = ["dep:serde_json", "dep:serde_path_to_error", "dep:rmp-serde", "d
 [dependencies]
 viendesu-core.workspace = true
 viendesu-protocol.workspace = true
-http = "1.3.1"
 
 serde.workspace = true
-schemars.workspace = true
 serde_json = { workspace = true, optional = true, features = ["raw_value"] }
-futures.workspace = true
+futures = { workspace = true, optional = true }
 
 eva.workspace = true
 eyre.workspace = true
 
 axum = { optional = true, version = "0.8.4", default-features = false, features = ["http2", "ws", "macros", "multipart"] }
 tower-http = { optional = true, version = "0.6.6", default-features = false, features = ["cors"] }
-serde_urlencoded = { version = "0.7.1", optional = true }
 serde_path_to_error = { version = "0.1", optional = true }
-form_urlencoded = { version = "1", optional = true }
 
 rmp-serde = { version = "1.3", optional = true }
 rmp = { version = "0.8.14", optional = true }
@@ -52,3 +47,4 @@ tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
 serde_json.workspace = true
 rmp-serde = "1.3"
+futures.workspace = true

@@ -37,6 +37,25 @@ impl Call<'_> {
         let message = aux.to_string();
         envelope::failure(self.format, self.id, aux_code(aux), &message, Some(aux))
     }
+
+    /// Encodes an endpoint's outcome: `result`, a domain error or an auxiliary one.
+    pub fn finish<O, E>(&self, response: Response<O, E>) -> Vec<u8>
+    where
+        O: Serialize,
+        E: Serialize + fmt::Display,
+    {
+        match response {
+            Ok(ok) => envelope::success(self.format, self.id, &ok),
+            Err(Generic::Spec(err)) => envelope::failure(
+                self.format,
+                self.id,
+                code::DOMAIN,
+                &err.to_string(),
+                Some(&err),
+            ),
+            Err(Generic::Aux(aux)) => self.fail_aux(&aux),
+        }
+    }
 }
 
 pub const fn aux_code(aux: &Aux) -> i32 {
@@ -75,17 +94,7 @@ fn handle<'a, S: IsSession, E: Endpoint<S>>(
             Err(message) => return call.fail(code::INVALID_PARAMS, &message),
         };
 
-        match E::call(session, args).await {
-            Ok(ok) => envelope::success(call.format, call.id, &ok),
-            Err(Generic::Spec(err)) => envelope::failure(
-                call.format,
-                call.id,
-                code::DOMAIN,
-                &err.to_string(),
-                Some(&err),
-            ),
-            Err(Generic::Aux(aux)) => call.fail_aux(&aux),
-        }
+        call.finish(E::call(session, args).await)
     })
 }
 

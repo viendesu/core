@@ -1,25 +1,13 @@
-use eva::{
-    component_configs::ComponentConfig, logging as log, perfect_derive, supervisor::SlaveRx,
-};
+use eva::{component_configs::ComponentConfig, logging as log, supervisor::SlaveRx};
 
 use eyre::Context;
-use viendesu_core::service::{IsService, Session, SessionMaker, SessionOf};
-use viendesu_protocol::errors::AuxResult;
+use viendesu_core::service::IsService;
 
 use tokio::net;
 
 pub use self::config::Config;
 
 pub mod config;
-
-mod context;
-mod handler;
-mod openapi;
-mod request;
-mod response;
-
-mod routes;
-
 pub mod rpc;
 
 /// 24 hours
@@ -61,44 +49,16 @@ pub async fn serve(
     Ok(())
 }
 
-/// REST routes, `POST /rpc` and whatever `mount` adds (e.g. `/mcp`), all behind
-/// the tracing and CORS layers — routes added after `.layer()` would not get them.
+/// `POST /rpc`, `POST /uploads/{id}` and whatever `mount` adds (e.g. `/mcp`),
+/// all behind the tracing and CORS layers — routes added after `.layer()`
+/// would not get them.
 pub fn make_router<T: Types>(
     service: T::Service,
     mount: impl FnOnce(axum::Router) -> axum::Router,
 ) -> axum::Router {
-    use axum::http::header;
     use tower_http::cors;
 
-    let scope = handler::RouterScope::root(State::<T> {
-        service: service.clone(),
-    });
-    let (router, api) = routes::make(scope).finish();
-
-    let document = axum::body::Bytes::from(
-        serde_json::to_vec(&api.into_document()).expect("OpenAPI document is valid JSON"),
-    );
-    let serve_document = move || {
-        let document = document.clone();
-        async move { ([(header::CONTENT_TYPE, "application/json")], document) }
-    };
-
-    let router = router
-        .route("/openapi.json", axum::routing::get(serve_document))
-        .merge(rpc::router::<T>(service));
-
-    mount(router)
+    mount(rpc::router::<T>(service))
         .layer(fastrace_axum::FastraceLayer)
         .layer(cors::CorsLayer::very_permissive().max_age(CORS_MAX_AGE))
-}
-
-#[perfect_derive(Clone)]
-struct State<T: Types> {
-    service: T::Service,
-}
-
-impl<T: Types> State<T> {
-    async fn make_session(&self) -> AuxResult<Session<SessionOf<T::Service>>> {
-        Ok(self.service.make_session().await?)
-    }
 }
