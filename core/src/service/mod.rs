@@ -62,23 +62,109 @@ macro_rules! domains {
     };
 }
 
-pub mod marks;
-pub mod tabs;
+/// The single list of service endpoints: invokes `$callback! { ... }` with it.
+///
+/// Every group `module { accessor: Trait { method, other => endpoint } }` names
+/// the protocol module `viendesu_protocol::requests::module` and the service
+/// module `viendesu_core::service::module`; `accessor` is the [`Session`]
+/// projection of `Trait`, and the endpoint module defaults to the method name.
+/// `#[stream]` marks endpoints whose `Args` are not serde types.
+///
+/// Callbacks must accept every group, so match the full grammar:
+///
+/// ```ignore
+/// $( $module:ident { $( $accessor:ident : $Trait:ident {
+///     $( $(#[$attr:ident])* $method:ident $(=> $endpoint:ident)? ),* $(,)?
+/// } )* } )*
+/// ```
+#[macro_export]
+macro_rules! for_each_endpoint {
+    ($callback:ident) => {
+        $callback! {
+            users {
+                users: Users {
+                    get,
+                    check_auth,
+                    search,
+                    begin_auth,
+                    finish_auth,
+                    sign_in,
+                    sign_up,
+                    update,
+                    confirm_sign_up,
+                }
+            }
+            authors {
+                authors: Authors { get, search, create, update }
+            }
+            games {
+                games: Games { get, search, create, update, rate }
+            }
 
-pub mod boards;
-pub mod messages;
-pub mod threads;
+            boards {
+                boards: Boards { get, create, delete, edit }
+            }
+            threads {
+                threads: Threads { get, search, delete, edit, create }
+            }
+            messages {
+                messages: Messages { get, post, delete, edit }
+            }
 
-pub mod articles;
-pub mod blogs;
-pub mod comments;
+            blogs {
+                blogs: Blogs { get, edit }
+            }
+            articles {
+                articles: Articles { get, search, create, delete, edit }
+            }
+            comments {
+                comments: Comments { list, replies, create, edit, delete, like }
+            }
 
-pub mod authors;
-pub mod games;
-pub mod users;
+            marks {
+                tags: Tags { list => list_tags, add => add_tag }
+                genres: Genres { list => list_genres }
+                badges: Badges { list => list_badges, add => add_badge }
+            }
+            tabs {
+                tabs: Tabs { list, insert, delete, list_items }
+            }
+
+            uploads {
+                uploads: Uploads { list_pending, start, abort, #[stream] finish }
+            }
+        }
+    };
+}
+
+macro_rules! define_services {
+    ($(
+        $module:ident {$(
+            $accessor:ident : $Trait:ident {
+                $( $(#[$attr:ident])* $method:ident $(=> $endpoint:ident)? ),* $(,)?
+            }
+        )*}
+    )*) => {
+        $(
+            pub mod $module {$(
+                service_trait! {
+                    pub trait $Trait(viendesu_protocol::requests::$module) {
+                        $( $method $(=> $endpoint)? ),*
+                    }
+                }
+            )*}
+        )*
+
+        domains! {
+            $($( $accessor: $module::$Trait, )*)*
+            authz: authz::Authentication,
+        }
+    };
+}
+
+for_each_endpoint!(define_services);
 
 pub mod files;
-pub mod uploads;
 
 pub mod authz;
 
@@ -99,31 +185,6 @@ impl<S: IsSession> Session<S> {
     pub const fn new(session: S) -> Self {
         Self(session)
     }
-}
-
-domains! {
-    users: users::Users,
-    authors: authors::Authors,
-    games: games::Games,
-
-    boards: boards::Boards,
-    threads: threads::Threads,
-    messages: messages::Messages,
-
-    blogs: blogs::Blogs,
-    articles: articles::Articles,
-
-    comments: comments::Comments,
-
-    authz: authz::Authentication,
-
-    tags: marks::Tags,
-    genres: marks::Genres,
-    badges: marks::Badges,
-
-    tabs: tabs::Tabs,
-
-    uploads: uploads::Uploads,
 }
 
 #[auto_impl(&, &mut, Arc)]
