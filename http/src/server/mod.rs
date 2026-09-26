@@ -1,4 +1,8 @@
-use eva::{component_configs::ComponentConfig, logging as log, supervisor::SlaveRx};
+use eva::{
+    component_configs::ComponentConfig,
+    logging as log,
+    supervisor::{Command, SlaveRx},
+};
 
 use eyre::Context;
 use viendesu_core::service::IsService;
@@ -22,8 +26,6 @@ pub async fn serve(
     config: ComponentConfig<Config>,
     router: axum::Router,
 ) -> eyre::Result<()> {
-    // TODO: use it.
-    _ = rx;
     let config::Config {
         unencrypted,
         ssl: _,
@@ -43,10 +45,20 @@ pub async fn serve(
     log::info!(at:% = listener.local_addr().unwrap(); "started HTTP server");
 
     axum::serve(listener, router)
+        .with_graceful_shutdown(shutdown_requested(rx))
         .await
         .wrap_err("failed to serve")?;
 
+    log::info!("HTTP server drained");
+
     Ok(())
+}
+
+async fn shutdown_requested(mut rx: SlaveRx) {
+    // A closed channel means the supervisor is gone, so stop as well.
+    match rx.recv().await {
+        Some(Command::Shutdown) | None => {}
+    }
 }
 
 /// `POST /rpc`, `POST /uploads/{id}` and whatever `mount` adds (e.g. `/mcp`),
