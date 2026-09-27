@@ -46,6 +46,7 @@ pub mod update {
         pub description: Patch<Option<game::Description>>,
         pub slug: Patch<game::Slug>,
         pub thumbnail: Patch<Option<file::Id>>,
+        pub vndb: Patch<Option<game::VndbId>>,
         pub genres: Patch<mark::Genres>,
         pub downloads: Patch<Vec<game::Download>>,
         pub badges: Patch<mark::Badges>,

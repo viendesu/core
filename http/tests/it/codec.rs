@@ -134,6 +134,7 @@ fn protocol_values() {
         description: Patch::Change(None),
         slug: Patch::Keep,
         thumbnail: Patch::Keep,
+        vndb: Patch::Change(Some(game::VndbId(97))),
         genres: Patch::Keep,
         downloads: Patch::Keep,
         badges: Patch::Keep,

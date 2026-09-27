@@ -23,7 +23,7 @@ fn update_requests_allow_omitted_patch_fields() {
 #[test]
 fn explicit_keep_still_parses() {
     parses::<requests::games::update::Update>(
-        r#"{"title":"keep","description":"keep","slug":"keep","thumbnail":"keep","genres":"keep","downloads":"keep","badges":"keep","tags":"keep","screenshots":"keep","published":"keep"}"#,
+        r#"{"title":"keep","description":"keep","slug":"keep","thumbnail":"keep","vndb":"keep","genres":"keep","downloads":"keep","badges":"keep","tags":"keep","screenshots":"keep","published":"keep"}"#,
     );
 }
 
