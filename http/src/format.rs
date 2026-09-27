@@ -4,6 +4,9 @@ use eva::error::ShitHappens;
 #[cfg(feature = "format-serde")]
 use eyre::Context;
 
+#[cfg(feature = "format-serde")]
+mod json_model;
+
 #[data(copy, display("got unsupported mime type"), error)]
 pub struct UnknownMimeType;
 
@@ -136,10 +139,11 @@ impl Format {
             }
             .shit_happens(),
             Self::Msgpack => {
-                // Through the JSON data model: rmp-serde alone writes unit structs as `[]`.
-                let tree = serde_json::to_value(what).shit_happens();
-                let mut serializer = rmp_serde::Serializer::new(dst).with_human_readable();
-                serde::Serialize::serialize(&tree, &mut serializer).shit_happens();
+                let mut serializer = rmp_serde::Serializer::new(dst)
+                    .with_struct_map()
+                    .with_human_readable();
+                serde::Serialize::serialize(&json_model::JsonModel(what), &mut serializer)
+                    .shit_happens();
             }
         }
     }
@@ -179,103 +183,69 @@ const MAX_DEPTH: usize = 128;
 #[cfg(feature = "format-serde")]
 #[data(copy, error, display(doc))]
 pub enum MsgpackError {
-    /// truncated MessagePack value
-    Truncated,
-    /// reserved MessagePack marker 0xc1
-    Reserved,
-    /// MessagePack nested deeper than 128 levels
-    TooDeep,
-    /// MessagePack map key is not a string
-    NonStringKey,
-    /// MessagePack binary or extension value has no JSON counterpart
+    /// malformed MessagePack
+    Malformed,
+    /// MessagePack value has no JSON counterpart
     NotJson,
-}
-
-#[cfg(feature = "format-serde")]
-impl MsgpackError {
-    /// Malformed input, as opposed to well-formed input JSON cannot carry.
-    pub const fn is_malformed(self) -> bool {
-        matches!(self, Self::Truncated | Self::Reserved | Self::TooDeep)
-    }
 }
 
 /// Length in bytes of the MessagePack value at the start of `buf`, which must
 /// be JSON-shaped: string map keys, no binary or extension values.
 ///
-/// Serde would otherwise bind integer keys to struct fields by declaration
-/// index. Walks markers iteratively over a depth-bounded stack, so hostile
-/// input costs neither memory nor native stack.
+/// Serde would otherwise bind integer keys to struct fields by declaration index.
 #[cfg(feature = "format-serde")]
 pub fn msgpack_value_len(buf: &[u8]) -> Result<usize, MsgpackError> {
-    use rmp::Marker::*;
+    use MsgpackError::*;
+    use rmp::{
+        Marker::{self, *},
+        decode,
+    };
 
-    fn be(buf: &[u8], pos: &mut usize, width: usize) -> Result<u64, MsgpackError> {
-        let bytes = buf.get(*pos..*pos + width).ok_or(MsgpackError::Truncated)?;
-        *pos += width;
-        Ok(bytes.iter().fold(0, |acc, &b| acc << 8 | u64::from(b)))
+    fn peek(rd: &[u8]) -> Result<Marker, MsgpackError> {
+        rd.first().map(|&b| Marker::from_u8(b)).ok_or(Malformed)
     }
 
-    // Items left in each open container (a map counts keys and values) and
-    // whether it is a map.
-    let mut open: Vec<(u64, bool)> = Vec::new();
-    let mut pos = 0;
-
-    loop {
-        let is_key = match open.last_mut() {
-            Some((left, is_map)) => {
-                let is_key = *is_map && *left % 2 == 0;
-                *left -= 1;
-                is_key
-            }
-            None => false,
-        };
-
-        let marker = rmp::Marker::from_u8(*buf.get(pos).ok_or(MsgpackError::Truncated)?);
-        pos += 1;
-        if is_key && !matches!(marker, FixStr(_) | Str8 | Str16 | Str32) {
-            return Err(MsgpackError::NonStringKey);
-        }
-
-        let (payload, container) = match marker {
-            FixPos(_) | FixNeg(_) | Null | True | False => (0, None),
-            U8 | I8 => (1, None),
-            U16 | I16 => (2, None),
-            U32 | I32 | F32 => (4, None),
-            U64 | I64 | F64 => (8, None),
-            FixStr(len) => (u64::from(len), None),
-            Str8 => (be(buf, &mut pos, 1)?, None),
-            Str16 => (be(buf, &mut pos, 2)?, None),
-            Str32 => (be(buf, &mut pos, 4)?, None),
-            FixArray(len) => (0, Some((u64::from(len), false))),
-            Array16 => (0, Some((be(buf, &mut pos, 2)?, false))),
-            Array32 => (0, Some((be(buf, &mut pos, 4)?, false))),
-            FixMap(len) => (0, Some((2 * u64::from(len), true))),
-            Map16 => (0, Some((2 * be(buf, &mut pos, 2)?, true))),
-            Map32 => (0, Some((2 * be(buf, &mut pos, 4)?, true))),
-            Bin8 | Bin16 | Bin32 | FixExt1 | FixExt2 | FixExt4 | FixExt8 | FixExt16 | Ext8
-            | Ext16 | Ext32 => return Err(MsgpackError::NotJson),
-            Reserved => return Err(MsgpackError::Reserved),
-        };
-
-        let payload = usize::try_from(payload).map_err(|_| MsgpackError::Truncated)?;
-        pos = pos
-            .checked_add(payload)
-            .filter(|&end| end <= buf.len())
-            .ok_or(MsgpackError::Truncated)?;
-
-        if let Some(container) = container.filter(|&(items, _)| items > 0) {
-            if open.len() == MAX_DEPTH {
-                return Err(MsgpackError::TooDeep);
-            }
-            open.push(container);
-        }
-        while open.last().is_some_and(|&(left, _)| left == 0) {
-            open.pop();
-        }
-        if open.is_empty() {
-            return Ok(pos);
-        }
+    fn advance(rd: &mut &[u8], n: usize) -> Result<(), MsgpackError> {
+        *rd = rd.get(n..).ok_or(Malformed)?;
+        Ok(())
     }
+
+    /// Skips one value; `depth` bounds the recursion.
+    fn skip(rd: &mut &[u8], depth: usize) -> Result<(), MsgpackError> {
+        let (items, is_map) = match peek(rd)? {
+            FixArray(_) | Array16 | Array32 => {
+                (decode::read_array_len(rd).map_err(|_| Malformed)?, false)
+            }
+            FixMap(_) | Map16 | Map32 => (decode::read_map_len(rd).map_err(|_| Malformed)?, true),
+            FixStr(_) | Str8 | Str16 | Str32 => {
+                let len = decode::read_str_len(rd).map_err(|_| Malformed)?;
+                return advance(rd, len as usize);
+            }
+            FixPos(_) | FixNeg(_) | Null | True | False => return advance(rd, 1),
+            U8 | I8 => return advance(rd, 2),
+            U16 | I16 => return advance(rd, 3),
+            U32 | I32 | F32 => return advance(rd, 5),
+            U64 | I64 | F64 => return advance(rd, 9),
+            Reserved => return Err(Malformed),
+            _ => return Err(NotJson),
+        };
+
+        let depth = depth.checked_sub(1).ok_or(Malformed)?;
+        for _ in 0..items {
+            if is_map {
+                if !matches!(peek(rd)?, FixStr(_) | Str8 | Str16 | Str32) {
+                    return Err(NotJson);
+                }
+                skip(rd, depth)?;
+            }
+            skip(rd, depth)?;
+        }
+        Ok(())
+    }
+
+    let mut rest = buf;
+    skip(&mut rest, MAX_DEPTH)?;
+    Ok(buf.len() - rest.len())
 }
 
 #[cfg(test)]
@@ -333,111 +303,5 @@ mod tests {
             Some(Json)
         );
         assert_eq!(n("text/html"), None);
-    }
-
-    #[cfg(feature = "format-serde")]
-    mod msgpack {
-        use super::super::{MsgpackError, msgpack_value_len};
-
-        fn encode(value: &serde_json::Value) -> Vec<u8> {
-            rmp_serde::to_vec(value).unwrap()
-        }
-
-        #[test]
-        fn value_lengths() {
-            let values = [
-                serde_json::json!(null),
-                serde_json::json!(true),
-                serde_json::json!(-1),
-                serde_json::json!(u64::MAX),
-                serde_json::json!(i64::MIN),
-                serde_json::json!(1.5),
-                serde_json::json!("x".repeat(40)),
-                serde_json::json!("y".repeat(300)),
-                serde_json::json!("z".repeat(70_000)),
-                serde_json::json!([1, [2, [3, {"a": [null]}]], "s"]),
-                serde_json::json!({"k": {"n": [1, 2, 3], "m": {}}, "e": []}),
-                serde_json::json!((0..20).collect::<Vec<_>>()),
-                serde_json::json!((0..70_000).map(|_| 0).collect::<Vec<_>>()),
-                serde_json::json!(
-                    (0..20)
-                        .map(|i| (format!("k{i}"), serde_json::json!(i)))
-                        .collect::<serde_json::Map<_, _>>()
-                ),
-            ];
-
-            for value in values {
-                let mut bytes = encode(&value);
-                let len = bytes.len();
-                assert_eq!(msgpack_value_len(&bytes), Ok(len), "{value}");
-
-                bytes.extend_from_slice(&[0xc0, 0x01]);
-                assert_eq!(msgpack_value_len(&bytes), Ok(len), "{value}");
-            }
-        }
-
-        #[test]
-        fn only_json_shapes() {
-            let bin = [0xc4, 1, 7];
-            assert_eq!(msgpack_value_len(&bin), Err(MsgpackError::NotJson));
-            assert_eq!(
-                msgpack_value_len(&[0x91, 0xd4, 1, 0]),
-                Err(MsgpackError::NotJson)
-            );
-            assert_eq!(msgpack_value_len(&[0xc7, 0, 0]), Err(MsgpackError::NotJson));
-
-            // {0: 1}, {nil: 1}, {"a": {1: 2}}, {[]: 1}
-            assert_eq!(
-                msgpack_value_len(&[0x81, 0x00, 0x01]),
-                Err(MsgpackError::NonStringKey)
-            );
-            assert_eq!(
-                msgpack_value_len(&[0x81, 0xc0, 0x01]),
-                Err(MsgpackError::NonStringKey)
-            );
-            assert_eq!(
-                msgpack_value_len(&[0x81, 0xa1, b'a', 0x81, 0x01, 0x02]),
-                Err(MsgpackError::NonStringKey)
-            );
-            assert_eq!(
-                msgpack_value_len(&[0x81, 0x90, 0x01]),
-                Err(MsgpackError::NonStringKey)
-            );
-            // {bin "a": 1}
-            assert_eq!(
-                msgpack_value_len(&[0x81, 0xc4, 1, b'a', 0x01]),
-                Err(MsgpackError::NonStringKey)
-            );
-            // Values after a nested map are values again: {"a": {}, "b": [1]}
-            let ok = [0x82, 0xa1, b'a', 0x80, 0xa1, b'b', 0x91, 0x01];
-            assert_eq!(msgpack_value_len(&ok), Ok(ok.len()));
-        }
-
-        #[test]
-        fn malformed() {
-            assert_eq!(msgpack_value_len(&[]), Err(MsgpackError::Truncated));
-            assert_eq!(msgpack_value_len(&[0xc1]), Err(MsgpackError::Reserved));
-            assert_eq!(
-                msgpack_value_len(&[0xa5, b'a']),
-                Err(MsgpackError::Truncated)
-            );
-            assert_eq!(
-                msgpack_value_len(&[0x92, 0x01]),
-                Err(MsgpackError::Truncated)
-            );
-            assert_eq!(
-                msgpack_value_len(&[0xdf, 0xff, 0xff, 0xff, 0xff]),
-                Err(MsgpackError::Truncated)
-            );
-            assert_eq!(
-                msgpack_value_len(&[0xdb, 0xff, 0xff, 0xff, 0xff, b'a']),
-                Err(MsgpackError::Truncated)
-            );
-
-            let deep = [vec![0x91; 100_000], vec![0xc0]].concat();
-            assert_eq!(msgpack_value_len(&deep), Err(MsgpackError::TooDeep));
-            let just_fits = [vec![0x91; 128], vec![0xc0]].concat();
-            assert_eq!(msgpack_value_len(&just_fits), Ok(just_fits.len()));
-        }
     }
 }

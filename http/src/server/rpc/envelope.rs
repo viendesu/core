@@ -2,34 +2,25 @@
 
 use std::{borrow::Cow, fmt};
 
+use eva::str::CompactString;
 use serde::{
     Deserialize, Deserializer, Serialize,
     de::{self, DeserializeOwned},
 };
 use serde_json::value::RawValue;
 
-use crate::format::{DumpParams, Format, msgpack_value_len};
+use crate::format::{DumpParams, Format, MsgpackError, msgpack_value_len};
 
 use super::code;
 
 /// Request id, echoed back verbatim.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(untagged)]
 pub enum Id {
     Null,
     Int(i64),
     Uint(u64),
-    Str(String),
-}
-
-impl Serialize for Id {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Self::Null => serializer.serialize_none(),
-            Self::Int(i) => serializer.serialize_i64(*i),
-            Self::Uint(u) => serializer.serialize_u64(*u),
-            Self::Str(s) => serializer.serialize_str(s),
-        }
-    }
+    Str(CompactString),
 }
 
 impl<'de> Deserialize<'de> for Id {
@@ -60,7 +51,7 @@ impl<'de> Deserialize<'de> for Id {
             }
 
             fn visit_str<E>(self, v: &str) -> Result<Id, E> {
-                Ok(Id::Str(v.to_owned()))
+                Ok(Id::Str(v.into()))
             }
         }
 
@@ -69,6 +60,9 @@ impl<'de> Deserialize<'de> for Id {
 }
 
 /// Parameters of a call, still in the wire codec.
+///
+/// Members are unordered, so `params` may precede `method` and is decoded once
+/// the method is known; being borrowed, it costs only re-scans of its bytes.
 pub enum Params<'a> {
     Absent,
     Json(&'a RawValue),
@@ -192,12 +186,9 @@ fn parse_msgpack(body: &[u8]) -> Result<Request<'_>, Rejection> {
         }
     }
 
-    let len = msgpack_value_len(body).map_err(|e| {
-        if e.is_malformed() {
-            Rejection::parse(e)
-        } else {
-            Rejection::invalid(e)
-        }
+    let len = msgpack_value_len(body).map_err(|e| match e {
+        MsgpackError::Malformed => Rejection::parse(e),
+        MsgpackError::NotJson => Rejection::invalid(e),
     })?;
     if len != body.len() {
         return Err(Rejection::parse("trailing data after the request"));
