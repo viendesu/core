@@ -39,7 +39,6 @@ macro_rules! domains {
     };
 }
 
-for_each_endpoint!(eva::service_traits);
 for_each_endpoint!(domains);
 
 pub mod files;
