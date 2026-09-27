@@ -262,26 +262,24 @@ async fn unknown_methods() {
 async fn every_serde_endpoint_is_routed() {
     macro_rules! methods {
         ($(
-            $module:ident {$(
-                $accessor:ident : $Trait:ident {
-                    $( $(#[$attr:ident])* $method:ident $(=> $endpoint:ident)? ),* $(,)?
-                }
+            $segment:ident {$(
+                $accessor:ident : $Trait:ident {$(
+                    $(#[$flag:ident])*
+                    $method:ident = $endpoint:ident {
+                        args: $Args:ty,
+                        ok: $Ok:ty,
+                        err: $Err:ty,
+                        output: $Output:ty,
+                    }
+                )*}
             )*}
         )*) => {
             [$($($(
                 (
-                    concat!(stringify!($module), ".", method!($method $($endpoint)?)),
-                    !stringify!($($attr)*).is_empty(),
+                    concat!(stringify!($segment), ".", stringify!($endpoint)),
+                    !stringify!($($flag)*).is_empty(),
                 ),
             )*)*)*]
-        };
-    }
-    macro_rules! method {
-        ($method:ident) => {
-            stringify!($method)
-        };
-        ($method:ident $endpoint:ident) => {
-            stringify!($endpoint)
         };
     }
 

@@ -10,7 +10,7 @@ use serde_json::{Value, json};
 use tower::util::ServiceExt;
 
 use viendesu_core::service::{
-    AuxFut, CallStep, RespFut, Session, SessionMaker,
+    AuxFut, CallStep, Session, SessionMaker,
     articles::Articles,
     authors::Authors,
     authz::Authentication,
@@ -25,7 +25,10 @@ use viendesu_core::service::{
     uploads::Uploads,
     users::Users,
 };
-use viendesu_protocol::requests;
+use viendesu_protocol::requests::{
+    self, Response,
+    marks::{list_genres, list_tags},
+};
 
 // == Mock service ==
 
@@ -36,11 +39,10 @@ fn fail<O, E>() -> Fail<O, E> {
 }
 
 impl<I: Send, O: Send, E: Send> CallStep<I> for Fail<O, E> {
-    type Ok = O;
-    type Err = E;
+    type Output = Response<O, E>;
 
-    fn call(&mut self, _: I) -> impl RespFut<O, E> {
-        async { unimplemented!("stub endpoint") }
+    async fn call(&mut self, _: I) -> Self::Output {
+        unimplemented!("stub endpoint")
     }
 }
 
@@ -50,8 +52,7 @@ macro_rules! stub {
             &mut self,
         ) -> impl CallStep<
             $($seg)::+::Args,
-            Ok = $($seg)::+::Ok,
-            Err = $($seg)::+::Err,
+            Output = Response<$($seg)::+::Ok, $($seg)::+::Err>,
         > {
             fail()
         }
@@ -151,29 +152,23 @@ impl Comments for Mock {
 
 struct ListGenres;
 
-impl CallStep<requests::marks::list_genres::Args> for ListGenres {
-    type Ok = requests::marks::list_genres::Ok;
-    type Err = requests::marks::list_genres::Err;
+impl CallStep<list_genres::Args> for ListGenres {
+    type Output = Response<list_genres::Ok, list_genres::Err>;
 
-    fn call(&mut self, _: requests::marks::list_genres::Args) -> impl RespFut<Self::Ok, Self::Err> {
-        async {
-            Ok(requests::marks::list_genres::Ok {
-                genres: ["romance".parse().unwrap(), "horror".parse().unwrap()]
-                    .try_into()
-                    .unwrap(),
-            })
-        }
+    async fn call(&mut self, _: list_genres::Args) -> Self::Output {
+        Ok(list_genres::Ok {
+            genres: ["romance".parse().unwrap(), "horror".parse().unwrap()]
+                .try_into()
+                .unwrap(),
+        })
     }
 }
 
 impl Genres for Mock {
     fn list(
         &mut self,
-    ) -> impl CallStep<
-        requests::marks::list_genres::Args,
-        Ok = requests::marks::list_genres::Ok,
-        Err = requests::marks::list_genres::Err,
-    > {
+    ) -> impl CallStep<list_genres::Args, Output = Response<list_genres::Ok, list_genres::Err>>
+    {
         ListGenres
     }
 }
@@ -187,23 +182,18 @@ impl Badges for Mock {
 
 struct ListTags;
 
-impl CallStep<requests::marks::list_tags::Args> for ListTags {
-    type Ok = requests::marks::list_tags::Ok;
-    type Err = requests::marks::list_tags::Err;
+impl CallStep<list_tags::Args> for ListTags {
+    type Output = Response<list_tags::Ok, list_tags::Err>;
 
-    fn call(&mut self, _: requests::marks::list_tags::Args) -> impl RespFut<Self::Ok, Self::Err> {
-        async { Ok(requests::marks::list_tags::Ok { tags: vec![] }) }
+    async fn call(&mut self, _: list_tags::Args) -> Self::Output {
+        Ok(list_tags::Ok { tags: vec![] })
     }
 }
 
 impl Tags for Mock {
     fn list(
         &mut self,
-    ) -> impl CallStep<
-        requests::marks::list_tags::Args,
-        Ok = requests::marks::list_tags::Ok,
-        Err = requests::marks::list_tags::Err,
-    > {
+    ) -> impl CallStep<list_tags::Args, Output = Response<list_tags::Ok, list_tags::Err>> {
         ListTags
     }
 

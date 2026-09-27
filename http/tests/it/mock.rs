@@ -10,12 +10,10 @@ use futures::StreamExt as _;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
-use viendesu_core::service::{
-    AuxFut, CallStep, RespFut, Session, SessionMaker, authz::Authentication,
-};
+use viendesu_core::service::{AuxFut, CallStep, Session, SessionMaker, authz::Authentication};
 use viendesu_protocol::{
     errors::{self, Aux, Generic},
-    requests::{self, Response},
+    requests::{Response, uploads::finish},
     types::session,
     uploads::Chunk,
 };
@@ -97,15 +95,13 @@ where
     O: DeserializeOwned + Send,
     E: DeserializeOwned + Send,
 {
-    type Ok = O;
-    type Err = E;
+    type Output = Response<O, E>;
 
-    fn call(&mut self, args: A) -> impl RespFut<O, E> {
+    async fn call(&mut self, args: A) -> Self::Output {
         let reply = self
             .mock
             .record(self.method, serde_json::to_value(&args).unwrap());
-        let method = self.method;
-        async move { canned(method, reply) }
+        canned(self.method, reply)
     }
 }
 
@@ -114,60 +110,38 @@ pub struct Finish {
     mock: Mock,
 }
 
-impl CallStep<requests::uploads::finish::Args> for Finish {
-    type Ok = requests::uploads::finish::Ok;
-    type Err = requests::uploads::finish::Err;
+impl CallStep<finish::Args> for Finish {
+    type Output = Response<finish::Ok, finish::Err>;
 
-    fn call(
-        &mut self,
-        requests::uploads::finish::Args { id, mut stream }: requests::uploads::finish::Args,
-    ) -> impl RespFut<Self::Ok, Self::Err> {
-        let mock = self.mock.clone();
-        async move {
-            let mut bytes = 0;
-            let mut aborted = None;
-            while let Some(chunk) = stream.next().await {
-                match chunk {
-                    Chunk::Data(data) => bytes += data.len(),
-                    Chunk::Aborted(reason) => aborted = Some(reason.to_string()),
-                }
+    async fn call(&mut self, finish::Args { id, mut stream }: finish::Args) -> Self::Output {
+        let mut bytes = 0;
+        let mut aborted = None;
+        while let Some(chunk) = stream.next().await {
+            match chunk {
+                Chunk::Data(data) => bytes += data.len(),
+                Chunk::Aborted(reason) => aborted = Some(reason.to_string()),
             }
-
-            let reply = mock.record(
-                "uploads.finish",
-                serde_json::json!({ "id": id, "bytes": bytes, "aborted": aborted }),
-            );
-            canned("uploads.finish", reply)
         }
+
+        let reply = self.mock.record(
+            "uploads.finish",
+            serde_json::json!({ "id": id, "bytes": bytes, "aborted": aborted }),
+        );
+        canned("uploads.finish", reply)
     }
 }
 
 macro_rules! mock_method {
-    ($attrs:tt $module:ident $method:ident []) => {
-        mock_method!($attrs $module $method [$method]);
-    };
-    ([stream] $module:ident $method:ident [$endpoint:ident]) => {
-        fn $method(
-            &mut self,
-        ) -> impl CallStep<
-            requests::$module::$endpoint::Args,
-            Ok = requests::$module::$endpoint::Ok,
-            Err = requests::$module::$endpoint::Err,
-        > {
+    ([stream] $segment:ident $method:ident $endpoint:ident $Args:ty, $Output:ty) => {
+        fn $method(&mut self) -> impl CallStep<$Args, Output = $Output> {
             Finish { mock: self.clone() }
         }
     };
-    ([] $module:ident $method:ident [$endpoint:ident]) => {
-        fn $method(
-            &mut self,
-        ) -> impl CallStep<
-            requests::$module::$endpoint::Args,
-            Ok = requests::$module::$endpoint::Ok,
-            Err = requests::$module::$endpoint::Err,
-        > {
+    ([] $segment:ident $method:ident $endpoint:ident $Args:ty, $Output:ty) => {
+        fn $method(&mut self) -> impl CallStep<$Args, Output = $Output> {
             Step {
                 mock: self.clone(),
-                method: concat!(stringify!($module), ".", stringify!($endpoint)),
+                method: concat!(stringify!($segment), ".", stringify!($endpoint)),
                 _types: PhantomData,
             }
         }
@@ -176,15 +150,21 @@ macro_rules! mock_method {
 
 macro_rules! mock_domains {
     ($(
-        $module:ident {$(
-            $accessor:ident : $Trait:ident {
-                $( $(#[$attr:ident])* $method:ident $(=> $endpoint:ident)? ),* $(,)?
-            }
+        $segment:ident {$(
+            $accessor:ident : $Trait:ident {$(
+                $(#[$flag:ident])*
+                $method:ident = $endpoint:ident {
+                    args: $Args:ty,
+                    ok: $Ok:ty,
+                    err: $Err:ty,
+                    output: $Output:ty,
+                }
+            )*}
         )*}
     )*) => {
         $($(
-            impl viendesu_core::service::$module::$Trait for Mock {
-                $( mock_method!([$($attr)*] $module $method [$($endpoint)?]); )*
+            impl viendesu_core::service::$segment::$Trait for Mock {
+                $( mock_method!([$($flag)*] $segment $method $endpoint $Args, $Output); )*
             }
         )*)*
     };

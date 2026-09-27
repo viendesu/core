@@ -100,21 +100,18 @@ fn handle<'a, S: IsSession, E: Endpoint<S>>(
 
 macro_rules! endpoint {
     ([stream] $($rest:tt)*) => {};
-    ([] $module:ident $accessor:ident $Trait:ident $method:ident []) => {
-        endpoint!([] $module $accessor $Trait $method [$method]);
-    };
-    ([] $module:ident $accessor:ident $Trait:ident $method:ident [$endpoint:ident]) => {
-        impl<S: IsSession> Endpoint<S> for viendesu_protocol::requests::$module::$endpoint::Args {
-            const METHOD: &'static str = concat!(stringify!($module), ".", stringify!($endpoint));
+    ([] $segment:ident $accessor:ident $Trait:ident $method:ident $endpoint:ident $Args:ty, $Ok:ty, $Err:ty) => {
+        impl<S: IsSession> Endpoint<S> for $Args {
+            const METHOD: &'static str = concat!(stringify!($segment), ".", stringify!($endpoint));
 
-            type Ok = viendesu_protocol::requests::$module::$endpoint::Ok;
-            type Err = viendesu_protocol::requests::$module::$endpoint::Err;
+            type Ok = $Ok;
+            type Err = $Err;
 
             fn call(
                 session: &mut Session<S>,
                 args: Self,
             ) -> impl Future<Output = Response<Self::Ok, Self::Err>> + Send {
-                use viendesu_core::service::{CallStep as _, $module::$Trait as _};
+                use viendesu_core::service::{CallStep as _, $segment::$Trait as _};
 
                 async move { session.$accessor().$method().call(args).await }
             }
@@ -124,37 +121,37 @@ macro_rules! endpoint {
 
 macro_rules! register {
     ($table:ident [stream] $($rest:tt)*) => {};
-    ($table:ident [] $module:ident $method:ident []) => {
-        register!($table [] $module $method [$method]);
-    };
-    ($table:ident [] $module:ident $method:ident [$endpoint:ident]) => {{
-        type Args = viendesu_protocol::requests::$module::$endpoint::Args;
-
-        let displaced = $table.insert(
-            <Args as Endpoint<S>>::METHOD,
-            handle::<S, Args> as Handler<S>,
+    ($table:ident [] $Args:ty) => {
+        $table.insert(
+            <$Args as Endpoint<S>>::METHOD,
+            handle::<S, $Args> as Handler<S>,
         );
-        assert!(displaced.is_none(), "duplicate RPC method {}", <Args as Endpoint<S>>::METHOD);
-    }};
+    };
 }
 
 macro_rules! endpoints {
     ($(
-        $module:ident {$(
-            $accessor:ident : $Trait:ident {
-                $( $(#[$attr:ident])* $method:ident $(=> $endpoint:ident)? ),* $(,)?
-            }
+        $segment:ident {$(
+            $accessor:ident : $Trait:ident {$(
+                $(#[$flag:ident])*
+                $method:ident = $endpoint:ident {
+                    args: $Args:ty,
+                    ok: $Ok:ty,
+                    err: $Err:ty,
+                    output: $Output:ty,
+                }
+            )*}
         )*}
     )*) => {
         $($($(
-            endpoint!([$($attr)*] $module $accessor $Trait $method [$($endpoint)?]);
+            endpoint!([$($flag)*] $segment $accessor $Trait $method $endpoint $Args, $Ok, $Err);
         )*)*)*
 
-        /// Every serde endpoint of the service, keyed by `<module>.<endpoint>`.
+        /// Every serde endpoint of the service, keyed by `<segment>.<endpoint>`.
         pub fn table<S: IsSession>() -> HashMap<&'static str, Handler<S>> {
             let mut table = HashMap::new();
             $($($(
-                register!(table [$($attr)*] $module $method [$($endpoint)?]);
+                register!(table [$($flag)*] $Args);
             )*)*)*
             table
         }

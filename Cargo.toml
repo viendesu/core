@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "protocol/",
+    "macros/",
     "core/",
     "http/",
     "auth/",
@@ -12,6 +13,7 @@ resolver = "3"
 
 [workspace.dependencies]
 eva = { git = "ssh://forgejo@git.viende.su:61488/VienDesu/eva.git" }
+eva-api-builder = { git = "ssh://forgejo@git.viende.su:61488/VienDesu/eva.git" }
 
 futures = "0.3.31"
 tokio = "1.44.2"
@@ -37,10 +39,9 @@ viendesu-auth = { path = "auth/" }
 viendesu-http = { path = "http/" }
 viendesu-core = { path = "core/" }
 viendesu-protocol = { path = "protocol/" }
+viendesu-macros = { path = "macros/" }
 viendesu-mcp = { path = "mcp/" }
 
 # TODO: upstream.
 [patch.crates-io]
 schemars = { git = "ssh://forgejo@git.viende.su:61488/VienDesu/schemars.git", version = "1.0.0-alpha.17" }
-
-

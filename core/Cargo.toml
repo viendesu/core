@@ -10,6 +10,7 @@ test-util = ["dep:tokio"]
 
 [dependencies]
 viendesu-protocol.workspace = true
+viendesu-macros.workspace = true
 
 eva.workspace = true
 
