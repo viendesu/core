@@ -9,24 +9,9 @@ use http_body_util::BodyExt;
 use serde_json::{Value, json};
 use tower::util::ServiceExt;
 
-use viendesu_core::service::{
-    AuxFut, CallStep, Session, SessionMaker,
-    articles::Articles,
-    authors::Authors,
-    authz::Authentication,
-    blogs::Blogs,
-    boards::Boards,
-    comments::Comments,
-    games::Games,
-    marks::{Badges, Genres, Tags},
-    messages::Messages,
-    tabs::Tabs,
-    threads::Threads,
-    uploads::Uploads,
-    users::Users,
-};
+use viendesu_core::service::{AuxFut, CallStep, Session, SessionMaker, authz::Authentication};
 use viendesu_protocol::requests::{
-    self, Response,
+    Response,
     marks::{list_genres, list_tags},
 };
 
@@ -46,110 +31,6 @@ impl<I: Send, O: Send, E: Send> CallStep<I> for Fail<O, E> {
     }
 }
 
-macro_rules! stub {
-    ($($method:ident => $($seg:ident)::+),* $(,)?) => {$(
-        fn $method(
-            &mut self,
-        ) -> impl CallStep<
-            $($seg)::+::Args,
-            Output = Response<$($seg)::+::Ok, $($seg)::+::Err>,
-        > {
-            fail()
-        }
-    )*};
-}
-
-struct Mock;
-
-impl Users for Mock {
-    stub! {
-        get => requests::users::get,
-        check_auth => requests::users::check_auth,
-        search => requests::users::search,
-        begin_auth => requests::users::begin_auth,
-        finish_auth => requests::users::finish_auth,
-        sign_in => requests::users::sign_in,
-        sign_up => requests::users::sign_up,
-        update => requests::users::update,
-        confirm_sign_up => requests::users::confirm_sign_up,
-    }
-}
-
-impl Authors for Mock {
-    stub! {
-        get => requests::authors::get,
-        search => requests::authors::search,
-        create => requests::authors::create,
-        update => requests::authors::update,
-    }
-}
-
-impl Games for Mock {
-    stub! {
-        get => requests::games::get,
-        search => requests::games::search,
-        create => requests::games::create,
-        update => requests::games::update,
-        rate => requests::games::rate,
-    }
-}
-
-impl Boards for Mock {
-    stub! {
-        get => requests::boards::get,
-        create => requests::boards::create,
-        delete => requests::boards::delete,
-        edit => requests::boards::edit,
-    }
-}
-
-impl Threads for Mock {
-    stub! {
-        get => requests::threads::get,
-        search => requests::threads::search,
-        delete => requests::threads::delete,
-        edit => requests::threads::edit,
-        create => requests::threads::create,
-    }
-}
-
-impl Messages for Mock {
-    stub! {
-        get => requests::messages::get,
-        post => requests::messages::post,
-        delete => requests::messages::delete,
-        edit => requests::messages::edit,
-    }
-}
-
-impl Blogs for Mock {
-    stub! {
-        get => requests::blogs::get,
-        edit => requests::blogs::edit,
-    }
-}
-
-impl Articles for Mock {
-    stub! {
-        get => requests::articles::get,
-        search => requests::articles::search,
-        create => requests::articles::create,
-        delete => requests::articles::delete,
-        edit => requests::articles::edit,
-    }
-}
-
-impl Comments for Mock {
-    stub! {
-        list => requests::comments::list,
-        replies => requests::comments::replies,
-        create => requests::comments::create,
-        edit => requests::comments::edit,
-        delete => requests::comments::delete,
-        like => requests::comments::like,
-    }
-}
-
 struct ListGenres;
 
 impl CallStep<list_genres::Args> for ListGenres {
@@ -164,22 +45,6 @@ impl CallStep<list_genres::Args> for ListGenres {
     }
 }
 
-impl Genres for Mock {
-    fn list(
-        &mut self,
-    ) -> impl CallStep<list_genres::Args, Output = Response<list_genres::Ok, list_genres::Err>>
-    {
-        ListGenres
-    }
-}
-
-impl Badges for Mock {
-    stub! {
-        list => requests::marks::list_badges,
-        add => requests::marks::add_badge,
-    }
-}
-
 struct ListTags;
 
 impl CallStep<list_tags::Args> for ListTags {
@@ -190,33 +55,43 @@ impl CallStep<list_tags::Args> for ListTags {
     }
 }
 
-impl Tags for Mock {
-    fn list(
-        &mut self,
-    ) -> impl CallStep<list_tags::Args, Output = Response<list_tags::Ok, list_tags::Err>> {
+macro_rules! reply {
+    (marks list_genres) => {
+        ListGenres
+    };
+    (marks list_tags) => {
         ListTags
-    }
-
-    stub!(add => requests::marks::add_tag);
+    };
+    ($segment:ident $endpoint:ident) => {
+        fail()
+    };
 }
 
-impl Tabs for Mock {
-    stub! {
-        list => requests::tabs::list,
-        insert => requests::tabs::insert,
-        delete => requests::tabs::delete,
-        list_items => requests::tabs::list_items,
-    }
+macro_rules! mock {
+    ($(
+        $segment:ident {$(
+            $accessor:ident : $Trait:ident {$(
+                $(#[$flag:ident])*
+                $method:ident = $endpoint:ident {
+                    args: $Args:ty,
+                    ok: $Ok:ty,
+                    err: $Err:ty,
+                    output: $Output:ty,
+                }
+            )*}
+        )*}
+    )*) => {$($(
+        impl viendesu_core::service::$segment::$Trait for Mock {$(
+            fn $method(&mut self) -> impl CallStep<$Args, Output = $Output> {
+                reply!($segment $endpoint)
+            }
+        )*}
+    )*)*};
 }
 
-impl Uploads for Mock {
-    stub! {
-        list_pending => requests::uploads::list_pending,
-        start => requests::uploads::start,
-        abort => requests::uploads::abort,
-        finish => requests::uploads::finish,
-    }
-}
+struct Mock;
+
+viendesu_core::for_each_endpoint!(mock);
 
 impl Authentication for Mock {
     fn authenticate(&mut self, _: viendesu_protocol::types::session::Token) -> impl AuxFut<()> {
