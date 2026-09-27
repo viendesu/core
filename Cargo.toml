@@ -28,6 +28,10 @@ schemars = { git = "ssh://forgejo@git.viende.su:61488/VienDesu/schemars.git", fe
     "hashbrown015"
 ] }
 
+axum = { version = "0.8.4", default-features = false }
+tower = "0.5"
+http-body-util = "0.1"
+
 viendesu-captcha = { path = "captcha/" }
 viendesu-auth = { path = "auth/" }
 viendesu-http = { path = "http/" }
