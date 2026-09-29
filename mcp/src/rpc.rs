@@ -27,7 +27,7 @@ const SUPPORTED_VERSIONS: &[&str] = &["2025-06-18", "2025-03-26"];
 
 /// Base instructions; [`initialize`] appends the genre slugs to them.
 const INSTRUCTIONS: &str = "VienDesu! is a Russian visual novel catalog and forum. \
-    To find games by theme or genre, call search_games with genre slugs in \
+    To find games by theme or genre, call games_search with genre slugs in \
     include.genres_any. Its text query matches game titles only — never put \
     themes or genres there. \
     Authenticated requests (Authorization: Bearer <session token>) may also \
@@ -119,7 +119,7 @@ where
 
     // Genres are effectively static, so they are embedded into the
     // instructions once: clients get the valid slugs upfront instead of
-    // discovering them via list_genres. On fetch failure fall back to
+    // discovering them via genres_list. On fetch failure fall back to
     // the base text and retry on the next initialize.
     let instructions = match state.instructions.get() {
         Some(cached) => cached.as_str(),

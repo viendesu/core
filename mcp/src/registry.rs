@@ -86,7 +86,7 @@ impl<S: IsSession + 'static> Tools<S> {
     pub fn tool<Args, O, E, F, Fut>(
         mut self,
         name: &'static str,
-        description: &'static str,
+        description: impl Into<String>,
         f: F,
     ) -> Self
     where
@@ -100,7 +100,7 @@ impl<S: IsSession + 'static> Tools<S> {
 
         let mut spec = json!({
             "name": name,
-            "description": description,
+            "description": description.into(),
             "inputSchema": schema_of::<Args>(),
         });
         let output = schema_of::<O>();

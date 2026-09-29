@@ -77,6 +77,7 @@ macro_rules! mock {
                     ok: $Ok:ty,
                     err: $Err:ty,
                     output: $Output:ty,
+                    docs: [$($doc:literal),*],
                 }
             )*}
         )*}
@@ -189,10 +190,23 @@ async fn tools_list() {
     assert_eq!(status, StatusCode::OK);
     let tools = resp["result"]["tools"].as_array().unwrap();
     let names: Vec<_> = tools.iter().map(|t| t["name"].as_str().unwrap()).collect();
-    assert!(names.contains(&"search_games"));
-    assert!(names.contains(&"post_message"));
-    assert!(names.contains(&"update_game"));
-    assert!(names.contains(&"delete_board"));
+    assert!(names.contains(&"games_search"));
+    assert!(names.contains(&"messages_post"));
+    assert!(names.contains(&"games_update"));
+    assert!(names.contains(&"boards_delete"));
+    assert!(!names.contains(&"users_sign_in"));
+    assert!(!names.contains(&"uploads_finish"));
+
+    let search = tools.iter().find(|t| t["name"] == "games_search").unwrap();
+    let description = search["description"].as_str().unwrap();
+    assert!(
+        description.starts_with("Searches the catalog; the text query matches titles only.\n"),
+        "{description}"
+    );
+    assert!(
+        description.contains("\n\nFor theme or genre requests use `include.genres_any`"),
+        "{description}"
+    );
 
     for tool in tools {
         assert_eq!(tool["inputSchema"]["type"], "object", "{}", tool["name"]);
@@ -206,7 +220,7 @@ async fn tools_call() {
         router(),
         rpc(
             "tools/call",
-            json!({ "name": "list_tags", "arguments": {} }),
+            json!({ "name": "tags_list", "arguments": {} }),
         ),
     )
     .await;
@@ -230,7 +244,7 @@ async fn tools_call_invalid_args() {
         router(),
         rpc(
             "tools/call",
-            json!({ "name": "get_game", "arguments": { "unexpected": true } }),
+            json!({ "name": "games_get", "arguments": { "unexpected": true } }),
         ),
     )
     .await;
