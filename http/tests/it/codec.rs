@@ -127,6 +127,7 @@ fn protocol_values() {
             after: Some((ts(), game_id())),
         },
         limit: None,
+        resolve_marks: true,
     });
 
     assert_same_shape(&games::update::Update {

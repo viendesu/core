@@ -159,11 +159,17 @@ pub mod search {
         #[serde(default)]
         pub sort_by: SortBy,
         pub limit: Option<Limit>,
+        #[serde(default)]
+        pub resolve_marks: bool,
     }
 
     #[data]
     pub struct Ok {
         pub found: Vec<game::Game>,
+        /// Tag and badge names of the found games; empty unless requested
+        /// via `resolve_marks`.
+        #[serde(default)]
+        pub marks: game::Marks,
         pub authors: HashMap<author::Id, author::Mini>,
         pub users: HashMap<user::Id, user::Mini>,
     }

@@ -77,7 +77,8 @@ pub fn read_only<S: IsSession + 'static>() -> Tools<S> {
             "Search the games catalog. The text query matches game titles only; \
              for theme/genre requests use include.genres_any with genre slugs \
              (listed in the server instructions, or via list_genres). Also \
-             supports an author filter, sorting and pagination.",
+             supports an author filter, sorting and pagination. Set \
+             `resolve_marks` to also resolve tag/badge names.",
             |mut s: Session<S>, args: games::search::Args| async move {
                 s.games().search().call(args).await
             },
