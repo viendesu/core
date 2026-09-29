@@ -9,7 +9,6 @@ use eva::{
     array::ImmutableHeap,
     str::CompactString,
     time::{Date, Timestamp},
-    url,
 };
 
 use viendesu_http::format::{DumpParams, Format};
@@ -85,7 +84,7 @@ fn game() -> game::Game {
                 mac: false,
                 windows: true,
             },
-            link: game::DownloadLink::External(url::Url::parse("https://example.com/a").unwrap()),
+            link: game::DownloadLink::External("https://example.com/a".parse().unwrap()),
             label: CompactString::from("pc"),
         }],
         screenshots: game::Screenshots(ImmutableHeap::try_from(vec![file_id()]).unwrap()),

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use eva::{array, data, int, str, str::CompactString, time::Date, url};
+use eva::{array, data, int, str, str::CompactString, time::Date};
 
-use crate::types::{author, entity::define_eid, file, mark, slug, user};
+use crate::types::{author, entity::define_eid, file, http_url::HttpUrl, mark, slug, user};
 
 #[data]
 #[derive(Default)]
@@ -93,7 +93,7 @@ pub enum Platform {
 
 #[data]
 pub enum DownloadLink {
-    External(url::Url),
+    External(HttpUrl),
     Dedicated(file::Id),
 }
 

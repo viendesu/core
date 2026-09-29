@@ -20,6 +20,7 @@ pub mod game;
 
 pub mod entity;
 pub mod file;
+pub mod http_url;
 pub mod upload;
 
 pub mod patch;
