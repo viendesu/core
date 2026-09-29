@@ -5,7 +5,7 @@
 //!
 //! ```ignore
 //! let mcp = viendesu_mcp::router(service.clone(), viendesu_mcp::catalog::read_only());
-//! let router = viendesu_http::server::make_router::<T>(service, |r| r.nest("/mcp", mcp));
+//! let router = viendesu_http::server::make_router::<T>(service, &config, |r| r.nest("/mcp", mcp));
 //! ```
 //!
 //! Tool input/output schemas are derived from the protocol types via

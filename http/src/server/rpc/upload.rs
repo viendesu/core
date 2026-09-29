@@ -82,9 +82,9 @@ async fn outcome<T: Types>(
         }
     };
 
-    let mut session = match session::<T>(service, headers, &call).await {
+    let mut session = match session::<T>(service, headers).await {
         Ok(session) => session,
-        Err(body) => return body,
+        Err(failure) => return failure.answer(&call),
     };
 
     let result = session

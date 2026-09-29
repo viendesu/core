@@ -29,6 +29,7 @@ pub async fn serve(
     let config::Config {
         unencrypted,
         ssl: _,
+        rpc: _,
     } = &*config;
     let unencrypted = unencrypted
         .as_ref()
@@ -66,11 +67,12 @@ async fn shutdown_requested(mut rx: SlaveRx) {
 /// would not get them.
 pub fn make_router<T: Types>(
     service: T::Service,
+    config: &Config,
     mount: impl FnOnce(axum::Router) -> axum::Router,
 ) -> axum::Router {
     use tower_http::cors;
 
-    mount(rpc::router::<T>(service))
+    mount(rpc::router::<T>(service, &config.rpc))
         .layer(fastrace_axum::FastraceLayer)
         .layer(cors::CorsLayer::very_permissive().max_age(CORS_MAX_AGE))
 }

@@ -5,9 +5,13 @@
 //! `Args` of that endpoint. The envelope is JSON-RPC 2.0 in either codec:
 //! JSON, or MessagePack carrying a map with the same keys. `Content-Type`
 //! selects the request codec, `Accept` the response one (the request codec by
-//! default). Batches are not supported; a request without `id` is a
-//! notification and gets `204 No Content`. The session token travels in
-//! `Authorization: Bearer <token>`.
+//! default). A request without `id` is a notification and gets no response;
+//! a body with nothing to answer gets `204 No Content`. The session token
+//! travels in `Authorization: Bearer <token>`.
+//!
+//! A batch (an array of requests) of at most [`config::Rpc::max_batch`]
+//! elements runs sequentially in one session and is answered by an array in
+//! request order; an empty or oversized batch is rejected as a whole.
 //!
 //! Every dispatched call answers `200 OK`; 4xx statuses mean the body never
 //! reached the dispatcher (unsupported media type, body too large).
@@ -28,11 +32,15 @@ use axum::{
 use fastrace::{Span, future::FutureExt as _};
 
 use viendesu_core::service::{Session, SessionMaker as _, SessionOf, authz::Authentication as _};
+use viendesu_protocol::errors::Aux;
 
-use crate::{format::Format, server::Types};
+use crate::{
+    format::Format,
+    server::{Types, config},
+};
 
 use self::{
-    envelope::Id,
+    envelope::{Id, Message, Request},
     methods::{Call, Handler},
 };
 
@@ -63,12 +71,14 @@ pub mod code {
 struct RpcState<T: Types> {
     service: T::Service,
     methods: HashMap<&'static str, Handler<SessionOf<T::Service>>>,
+    max_batch: usize,
 }
 
-pub fn router<T: Types>(service: T::Service) -> axum::Router {
+pub fn router<T: Types>(service: T::Service, config: &config::Rpc) -> axum::Router {
     let state = Arc::new(RpcState::<T> {
         service: service.clone(),
         methods: methods::table(),
+        max_batch: config.max_batch.get(),
     });
 
     axum::Router::new()
@@ -76,26 +86,37 @@ pub fn router<T: Types>(service: T::Service) -> axum::Router {
         .merge(upload::router::<T>(Arc::new(service)))
 }
 
-/// A session authenticated by the `Authorization` header, or the encoded
-/// failure to answer instead.
-async fn session<T: Types>(
-    service: &T::Service,
-    headers: &HeaderMap,
-    call: &Call<'_>,
-) -> Result<Session<SessionOf<T::Service>>, Vec<u8>> {
+type SessionResult<T> = Result<Session<SessionOf<<T as Types>::Service>>, SessionFailure>;
+
+/// Why no session could be made; answered to every call that needs one.
+enum SessionFailure {
+    Service(Aux),
+    Header(Aux),
+}
+
+impl SessionFailure {
+    fn answer(&self, call: &Call<'_>) -> Vec<u8> {
+        match self {
+            Self::Service(aux) => call.fail_aux(aux),
+            Self::Header(aux) => call.fail(code::INVALID_REQUEST, &aux.to_string()),
+        }
+    }
+}
+
+/// A session authenticated by the `Authorization` header.
+async fn session<T: Types>(service: &T::Service, headers: &HeaderMap) -> SessionResult<T> {
     let mut session = service
         .make_session()
         .await
-        .map_err(|aux| call.fail_aux(&aux))?;
+        .map_err(SessionFailure::Service)?;
 
-    match extract::session_token(headers) {
-        Ok(None) => {}
-        Ok(Some(token)) => session
+    match extract::session_token(headers).map_err(SessionFailure::Header)? {
+        None => {}
+        Some(token) => session
             .authz()
             .authenticate(token)
             .await
-            .map_err(|aux| call.fail_aux(&aux))?,
-        Err(aux) => return Err(call.fail(code::INVALID_REQUEST, &aux.to_string())),
+            .map_err(SessionFailure::Service)?,
     }
 
     Ok(session)
@@ -119,26 +140,49 @@ async fn dispatch<T: Types>(
         Err(rejection) => return transport_error(rejection.status(), &rejection.body_text()),
     };
 
-    let request = match envelope::parse(request_format, &body) {
-        Ok(request) => request,
-        Err(rejection) => {
-            return reply(
-                format,
-                envelope::failure_plain(format, &Id::Null, rejection.code, &rejection.message),
-            );
+    let message = match envelope::parse(request_format, &body, state.max_batch) {
+        Ok(message) => message,
+        Err(rejection) => return reply(format, rejection.answer(format)),
+    };
+
+    let mut session = None;
+    let response = match message {
+        Message::Single(request) => run(&state, &headers, format, request, &mut session).await,
+        Message::Batch(requests) => {
+            let mut responses = Vec::with_capacity(requests.len());
+            for request in requests {
+                let response = match request {
+                    Ok(request) => run(&state, &headers, format, request, &mut session).await,
+                    Err(rejection) => Some(rejection.answer(format)),
+                };
+                responses.extend(response);
+            }
+
+            (!responses.is_empty()).then(|| envelope::batch(format, &responses))
         }
     };
-    let id = request.id.clone().unwrap_or(Id::Null);
+
+    match response {
+        Some(body) => reply(format, body),
+        None => StatusCode::NO_CONTENT.into_response(),
+    }
+}
+
+/// Calls the method in `session`, made on first need; `None` for a notification.
+async fn run<T: Types>(
+    state: &RpcState<T>,
+    headers: &HeaderMap,
+    format: Format,
+    request: Request<'_>,
+    session: &mut Option<SessionResult<T>>,
+) -> Option<Vec<u8>> {
+    let notification = request.id.is_none();
+    let id = request.id.unwrap_or(Id::Null);
 
     let Some((&method, &handler)) = state.methods.get_key_value(&*request.method) else {
-        if request.id.is_none() {
-            return StatusCode::NO_CONTENT.into_response();
-        }
         let message = format!("method {:?} not found", request.method);
-        return reply(
-            format,
-            envelope::failure_plain(format, &id, code::METHOD_NOT_FOUND, &message),
-        );
+        return (!notification)
+            .then(|| envelope::failure_plain(format, &id, code::METHOD_NOT_FOUND, &message));
     };
 
     let call = Call {
@@ -147,19 +191,19 @@ async fn dispatch<T: Types>(
         params: request.params,
     };
     let response = async {
-        match session::<T>(&state.service, &headers, &call).await {
-            Ok(mut session) => handler(&mut session, call).await,
-            Err(failure) => failure,
+        let session = match session {
+            Some(session) => session,
+            None => session.insert(self::session::<T>(&state.service, headers).await),
+        };
+        match session {
+            Ok(session) => handler(session, call).await,
+            Err(failure) => failure.answer(&call),
         }
     }
     .in_span(Span::enter_with_local_parent(method))
     .await;
 
-    if request.id.is_none() {
-        return StatusCode::NO_CONTENT.into_response();
-    }
-
-    reply(format, response)
+    (!notification).then_some(response)
 }
 
 fn reply(format: Format, body: Vec<u8>) -> Response {

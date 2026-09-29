@@ -8,7 +8,7 @@ use http_body_util::BodyExt as _;
 use serde_json::{Value, json};
 use tower::util::ServiceExt as _;
 
-use viendesu_http::server::{make_router, rpc::code};
+use viendesu_http::server::{Config, config, make_router, rpc::code};
 use viendesu_protocol::types::{entity, game, session, user};
 
 use crate::mock::{Mock, Service, Types};
@@ -30,7 +30,16 @@ pub fn token() -> session::Token {
 }
 
 pub fn app(mock: &Mock) -> Router {
-    make_router::<Types>(Service(mock.clone()), |router| {
+    app_with(mock, config::Rpc::default())
+}
+
+pub fn app_with(mock: &Mock, rpc: config::Rpc) -> Router {
+    let config = Config {
+        unencrypted: None,
+        ssl: None,
+        rpc,
+    };
+    make_router::<Types>(Service(mock.clone()), &config, |router| {
         router.route("/extra", get(async || "extra"))
     })
 }
@@ -62,7 +71,11 @@ impl Reply {
 }
 
 pub async fn send(mock: &Mock, request: Request<Body>) -> Reply {
-    let response = app(mock).oneshot(request).await.unwrap();
+    send_to(app(mock), request).await
+}
+
+pub async fn send_to(app: Router, request: Request<Body>) -> Reply {
+    let response = app.oneshot(request).await.unwrap();
     let status = response.status();
     let headers = response.headers().clone();
     let body = response.into_body().collect().await.unwrap().to_bytes();
@@ -302,10 +315,6 @@ async fn malformed_requests() {
         (json_body("{"), code::PARSE_ERROR),
         (json_body("[]"), code::INVALID_REQUEST),
         (
-            json_body(r#"[{"jsonrpc":"2.0","id":1,"method":"users.check_auth"}]"#),
-            code::INVALID_REQUEST,
-        ),
-        (
             json_body(r#"{"jsonrpc":"1.0","id":1,"method":"users.check_auth"}"#),
             code::INVALID_REQUEST,
         ),
@@ -321,10 +330,7 @@ async fn malformed_requests() {
         (msgpack_body(duplicate_method()), code::INVALID_REQUEST),
         (msgpack_body(integer_key_in_params()), code::INVALID_REQUEST),
         (msgpack_body(vec![0x81, 0xa1]), code::PARSE_ERROR),
-        (
-            msgpack_body(rmp_serde::to_vec(&json!([call("users.check_auth", json!({}))])).unwrap()),
-            code::INVALID_REQUEST,
-        ),
+        (msgpack_body(vec![0x90]), code::INVALID_REQUEST),
     ];
 
     for (request, expected) in cases {
@@ -561,4 +567,122 @@ async fn cors_covers_rpc_and_extra_routes() {
             .headers
             .contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN)
     );
+}
+
+#[tokio::test]
+async fn batch_answers_in_request_order() {
+    let mock = Mock::default();
+    let auth = json!({ "user": user_id(), "role": "admin" });
+    mock.reply("users.check_auth", json!({ "ok": auth }));
+    mock.reply("marks.list_genres", json!({ "ok": { "genres": ["rpg"] } }));
+
+    let batch = json!([
+        { "jsonrpc": "2.0", "id": "a", "method": "users.check_auth" },
+        { "jsonrpc": "2.0", "method": "users.check_auth" },
+        { "jsonrpc": "2.0", "id": 2, "method": "games.nope" },
+        7,
+        { "jsonrpc": "2.0", "id": 3, "method": "marks.list_genres" },
+    ]);
+    let reply = send(&mock, json_request(batch)).await;
+
+    assert_eq!(reply.status, StatusCode::OK);
+    let reply = reply.json();
+    let replies = reply.as_array().unwrap();
+    assert_eq!(replies.len(), 4);
+    assert_eq!(
+        replies[0],
+        json!({ "jsonrpc": "2.0", "id": "a", "result": auth })
+    );
+    assert_eq!(replies[1]["id"], 2);
+    assert_eq!(replies[1]["error"]["code"], code::METHOD_NOT_FOUND);
+    assert_eq!(replies[2]["id"], Value::Null);
+    assert_eq!(replies[2]["error"]["code"], code::INVALID_REQUEST);
+    assert_eq!(
+        replies[3],
+        json!({ "jsonrpc": "2.0", "id": 3, "result": { "genres": ["rpg"] } })
+    );
+    assert_eq!(mock.calls().len(), 3);
+}
+
+#[tokio::test]
+async fn msgpack_batch() {
+    let mock = Mock::default();
+    mock.reply("marks.list_genres", json!({ "ok": { "genres": ["rpg"] } }));
+
+    let batch = json!([
+        call("marks.list_genres", json!(null)),
+        [call("marks.list_genres", json!(null))],
+    ]);
+    let reply = send(&mock, msgpack_request(batch)).await;
+
+    let reply = reply.msgpack();
+    assert_eq!(reply[0]["result"], json!({ "genres": ["rpg"] }));
+    assert_eq!(reply[1]["error"]["code"], code::INVALID_REQUEST);
+    assert_eq!(mock.calls().len(), 1);
+}
+
+#[tokio::test]
+async fn batch_of_notifications_has_no_body() {
+    let mock = Mock::default();
+    let notification = json!({ "jsonrpc": "2.0", "method": "users.check_auth" });
+
+    let reply = send(&mock, json_request(json!([notification, notification]))).await;
+
+    assert_eq!(reply.status, StatusCode::NO_CONTENT);
+    assert!(reply.body.is_empty());
+    assert_eq!(mock.calls().len(), 2);
+}
+
+#[tokio::test]
+async fn batch_limit_is_configurable() {
+    let mock = Mock::default();
+    mock.reply("marks.list_genres", json!({ "ok": { "genres": [] } }));
+    let batch = |n| Value::Array(vec![call("marks.list_genres", json!(null)); n]);
+
+    let reply = send(&mock, json_request(batch(6))).await;
+    assert_eq!(reply.error_code(), i64::from(code::INVALID_REQUEST));
+    assert!(mock.calls().is_empty());
+
+    let reply = send(&mock, json_request(batch(5))).await;
+    assert_eq!(reply.json().as_array().unwrap().len(), 5);
+
+    let rpc = config::Rpc {
+        max_batch: 2.try_into().unwrap(),
+    };
+    let reply = send_to(app_with(&mock, rpc), json_request(batch(3))).await;
+    assert_eq!(reply.error_code(), i64::from(code::INVALID_REQUEST));
+    assert_eq!(mock.calls().len(), 5);
+}
+
+#[tokio::test]
+async fn batch_shares_one_session() {
+    let mock = Mock::default();
+    mock.reply("marks.list_genres", json!({ "ok": { "genres": [] } }));
+
+    let batch = |authorization: &str| {
+        let body = json!([
+            call("games.nope", json!({})),
+            call("marks.list_genres", json!(null)),
+            call("marks.list_genres", json!(null)),
+        ]);
+        post("application/json")
+            .header(header::AUTHORIZATION, authorization)
+            .body(Body::from(body.to_string()))
+            .unwrap()
+    };
+
+    let reply = send(&mock, batch(&format!("Bearer {}", token()))).await;
+    assert_eq!(reply.json().as_array().unwrap().len(), 3);
+    assert_eq!(mock.tokens(), [token()]);
+    assert_eq!(mock.calls().len(), 2);
+
+    mock.reject_tokens();
+    let reply = send(&mock, batch(&format!("Bearer {}", token()))).await;
+    let reply = reply.json();
+    assert_eq!(reply[0]["error"]["code"], code::METHOD_NOT_FOUND);
+    for reply in &reply.as_array().unwrap()[1..] {
+        assert_eq!(reply["error"]["code"], code::INVALID_SESSION);
+    }
+    assert_eq!(mock.tokens().len(), 2);
+    assert_eq!(mock.calls().len(), 2);
 }

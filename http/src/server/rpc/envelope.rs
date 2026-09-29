@@ -112,14 +112,33 @@ impl Rejection {
             message: format!("invalid request: {message}"),
         }
     }
+
+    pub fn answer(&self, format: Format) -> Vec<u8> {
+        failure_plain(format, &Id::Null, self.code, &self.message)
+    }
 }
 
-const BATCH: &str = "batch requests are not supported";
+/// A request body: one request, or a batch whose elements are rejected one by one.
+pub enum Message<'a> {
+    Single(Request<'a>),
+    Batch(Vec<Result<Request<'a>, Rejection>>),
+}
 
-pub fn parse(format: Format, body: &[u8]) -> Result<Request<'_>, Rejection> {
+/// A batch longer than `max_batch` is rejected before its elements are parsed.
+pub fn parse(format: Format, body: &[u8], max_batch: usize) -> Result<Message<'_>, Rejection> {
     match format {
-        Format::Json => parse_json(body),
-        Format::Msgpack => parse_msgpack(body),
+        Format::Json => parse_json(body, max_batch),
+        Format::Msgpack => parse_msgpack(body, max_batch),
+    }
+}
+
+fn check_batch_len(len: usize, max_batch: usize) -> Result<(), Rejection> {
+    match len {
+        0 => Err(Rejection::invalid("empty batch")),
+        len if len > max_batch => Err(Rejection::invalid(format_args!(
+            "batch of {len} requests exceeds the limit of {max_batch}"
+        ))),
+        _ => Ok(()),
     }
 }
 
@@ -133,7 +152,20 @@ fn check_version(version: &str) -> Result<(), Rejection> {
     }
 }
 
-fn parse_json(body: &[u8]) -> Result<Request<'_>, Rejection> {
+fn parse_json(body: &[u8], max_batch: usize) -> Result<Message<'_>, Rejection> {
+    let raw: &RawValue = serde_json::from_slice(body).map_err(Rejection::parse)?;
+    if raw.get().as_bytes().first() != Some(&b'[') {
+        return json_request(raw).map(Message::Single);
+    }
+
+    let elements: Vec<&RawValue> = serde_json::from_str(raw.get()).map_err(Rejection::parse)?;
+    check_batch_len(elements.len(), max_batch)?;
+    Ok(Message::Batch(
+        elements.into_iter().map(json_request).collect(),
+    ))
+}
+
+fn json_request(raw: &RawValue) -> Result<Request<'_>, Rejection> {
     #[derive(Deserialize)]
     struct Envelope<'a> {
         #[serde(borrow)]
@@ -150,11 +182,8 @@ fn parse_json(body: &[u8]) -> Result<Request<'_>, Rejection> {
         Id::deserialize(deserializer).map(Some)
     }
 
-    let raw: &RawValue = serde_json::from_slice(body).map_err(Rejection::parse)?;
-    match raw.get().as_bytes().first() {
-        Some(b'{') => {}
-        Some(b'[') => return Err(Rejection::invalid(BATCH)),
-        _ => return Err(Rejection::invalid("request must be an object")),
+    if raw.get().as_bytes().first() != Some(&b'{') {
+        return Err(Rejection::invalid("request must be an object"));
     }
 
     let envelope: Envelope<'_> = serde_json::from_str(raw.get()).map_err(Rejection::invalid)?;
@@ -176,7 +205,41 @@ fn parse_json(body: &[u8]) -> Result<Request<'_>, Rejection> {
     })
 }
 
-fn parse_msgpack(body: &[u8]) -> Result<Request<'_>, Rejection> {
+fn parse_msgpack(body: &[u8], max_batch: usize) -> Result<Message<'_>, Rejection> {
+    use rmp::Marker;
+
+    let len = msgpack_value_len(body).map_err(|e| match e {
+        MsgpackError::Malformed => Rejection::parse(e),
+        MsgpackError::NotJson => Rejection::invalid(e),
+    })?;
+    if len != body.len() {
+        return Err(Rejection::parse("trailing data after the request"));
+    }
+    if !matches!(
+        Marker::from_u8(body[0]),
+        Marker::FixArray(_) | Marker::Array16 | Marker::Array32
+    ) {
+        return msgpack_request(body).map(Message::Single);
+    }
+
+    let mut rest = body;
+    let count = rmp::decode::read_array_len(&mut rest).map_err(Rejection::parse)?;
+    check_batch_len(count as usize, max_batch)?;
+
+    let requests = (0..count)
+        .map(|_| {
+            // Cannot fail: the whole body already passed `msgpack_value_len`.
+            let len = msgpack_value_len(rest).unwrap_or(rest.len());
+            let (raw, tail) = rest.split_at(len);
+            rest = tail;
+            msgpack_request(raw)
+        })
+        .collect();
+    Ok(Message::Batch(requests))
+}
+
+/// `raw` is exactly one well-formed value.
+fn msgpack_request(raw: &[u8]) -> Result<Request<'_>, Rejection> {
     use rmp::{Marker, decode::DecodeStringError};
 
     fn string(raw: &[u8]) -> Option<&str> {
@@ -186,22 +249,14 @@ fn parse_msgpack(body: &[u8]) -> Result<Request<'_>, Rejection> {
         }
     }
 
-    let len = msgpack_value_len(body).map_err(|e| match e {
-        MsgpackError::Malformed => Rejection::parse(e),
-        MsgpackError::NotJson => Rejection::invalid(e),
-    })?;
-    if len != body.len() {
-        return Err(Rejection::parse("trailing data after the request"));
-    }
-    match Marker::from_u8(body[0]) {
-        Marker::FixMap(_) | Marker::Map16 | Marker::Map32 => {}
-        Marker::FixArray(_) | Marker::Array16 | Marker::Array32 => {
-            return Err(Rejection::invalid(BATCH));
-        }
-        _ => return Err(Rejection::invalid("request must be a map")),
+    if !matches!(
+        Marker::from_u8(raw[0]),
+        Marker::FixMap(_) | Marker::Map16 | Marker::Map32
+    ) {
+        return Err(Rejection::invalid("request must be a map"));
     }
 
-    let mut rest = body;
+    let mut rest = raw;
     let entries = rmp::decode::read_map_len(&mut rest).map_err(Rejection::parse)?;
 
     let mut version = None;
@@ -319,4 +374,32 @@ pub fn failure<D: Serialize + ?Sized>(
 
 pub fn failure_plain(format: Format, id: &Id, code: i32, message: &str) -> Vec<u8> {
     failure::<()>(format, id, code, message, None)
+}
+
+/// Joins encoded responses into a batch response without re-encoding them.
+pub fn batch(format: Format, responses: &[Vec<u8>]) -> Vec<u8> {
+    let payload: usize = responses.iter().map(Vec::len).sum();
+    let mut body = Vec::with_capacity(payload + responses.len() + 5);
+
+    match format {
+        Format::Json => {
+            body.push(b'[');
+            for (i, response) in responses.iter().enumerate() {
+                if i != 0 {
+                    body.push(b',');
+                }
+                body.extend_from_slice(response);
+            }
+            body.push(b']');
+        }
+        Format::Msgpack => {
+            let len = u32::try_from(responses.len()).expect("batch length fits u32");
+            rmp::encode::write_array_len(&mut body, len).expect("writing to a Vec cannot fail");
+            for response in responses {
+                body.extend_from_slice(response);
+            }
+        }
+    }
+
+    body
 }
