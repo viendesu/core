@@ -146,6 +146,7 @@ macro_rules! endpoints {
                     ok: $Ok:ty,
                     err: $Err:ty,
                     output: $Output:ty,
+                    docs: [$($doc:literal),*],
                 }
             )*}
         )*}

@@ -283,6 +283,7 @@ async fn every_serde_endpoint_is_routed() {
                         ok: $Ok:ty,
                         err: $Err:ty,
                         output: $Output:ty,
+                        docs: [$($doc:literal),*],
                     }
                 )*}
             )*}

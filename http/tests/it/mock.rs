@@ -161,6 +161,7 @@ macro_rules! mock_domains {
                     ok: $Ok:ty,
                     err: $Err:ty,
                     output: $Output:ty,
+                    docs: [$($doc:literal),*],
                 }
             )*}
         )*}
