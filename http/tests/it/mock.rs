@@ -132,10 +132,13 @@ impl CallStep<finish::Args> for Finish {
 }
 
 macro_rules! mock_method {
-    ([stream] $segment:ident $method:ident $endpoint:ident $Args:ty, $Output:ty) => {
+    ([stream $($flag:ident)*] $segment:ident $method:ident $endpoint:ident $Args:ty, $Output:ty) => {
         fn $method(&mut self) -> impl CallStep<$Args, Output = $Output> {
             Finish { mock: self.clone() }
         }
+    };
+    ([$skip:ident $($flag:ident)*] $($rest:tt)*) => {
+        mock_method!([$($flag)*] $($rest)*);
     };
     ([] $segment:ident $method:ident $endpoint:ident $Args:ty, $Output:ty) => {
         fn $method(&mut self) -> impl CallStep<$Args, Output = $Output> {

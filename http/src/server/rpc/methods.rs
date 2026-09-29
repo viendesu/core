@@ -98,8 +98,12 @@ fn handle<'a, S: IsSession, E: Endpoint<S>>(
     })
 }
 
+/// Streaming endpoints have no serde form; other flags do not matter here.
 macro_rules! endpoint {
-    ([stream] $($rest:tt)*) => {};
+    ([stream $($flag:ident)*] $($rest:tt)*) => {};
+    ([$skip:ident $($flag:ident)*] $($rest:tt)*) => {
+        endpoint!([$($flag)*] $($rest)*);
+    };
     ([] $segment:ident $accessor:ident $Trait:ident $method:ident $endpoint:ident $Args:ty, $Ok:ty, $Err:ty) => {
         impl<S: IsSession> Endpoint<S> for $Args {
             const METHOD: &'static str = concat!(stringify!($segment), ".", stringify!($endpoint));
@@ -120,7 +124,10 @@ macro_rules! endpoint {
 }
 
 macro_rules! register {
-    ($table:ident [stream] $($rest:tt)*) => {};
+    ($table:ident [stream $($flag:ident)*] $($rest:tt)*) => {};
+    ($table:ident [$skip:ident $($flag:ident)*] $($rest:tt)*) => {
+        register!($table [$($flag)*] $($rest)*);
+    };
     ($table:ident [] $Args:ty) => {
         $table.insert(
             <$Args as Endpoint<S>>::METHOD,

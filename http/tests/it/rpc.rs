@@ -290,7 +290,7 @@ async fn every_serde_endpoint_is_routed() {
             [$($($(
                 (
                     concat!(stringify!($segment), ".", stringify!($endpoint)),
-                    !stringify!($($flag)*).is_empty(),
+                    stringify!($($flag)*).contains("stream"),
                 ),
             )*)*)*]
         };
