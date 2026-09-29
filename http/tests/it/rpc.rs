@@ -583,7 +583,7 @@ async fn batch_answers_in_request_order() {
         7,
         { "jsonrpc": "2.0", "id": 3, "method": "marks.list_genres" },
     ]);
-    let reply = send(&mock, json_request(batch)).await;
+    let reply = send(&mock, authed(json_request(batch))).await;
 
     assert_eq!(reply.status, StatusCode::OK);
     let reply = reply.json();
@@ -613,7 +613,7 @@ async fn msgpack_batch() {
         call("marks.list_genres", json!(null)),
         [call("marks.list_genres", json!(null))],
     ]);
-    let reply = send(&mock, msgpack_request(batch)).await;
+    let reply = send(&mock, authed(msgpack_request(batch))).await;
 
     let reply = reply.msgpack();
     assert_eq!(reply[0]["result"], json!({ "genres": ["rpg"] }));
@@ -626,7 +626,11 @@ async fn batch_of_notifications_has_no_body() {
     let mock = Mock::default();
     let notification = json!({ "jsonrpc": "2.0", "method": "users.check_auth" });
 
-    let reply = send(&mock, json_request(json!([notification, notification]))).await;
+    let reply = send(
+        &mock,
+        authed(json_request(json!([notification, notification]))),
+    )
+    .await;
 
     assert_eq!(reply.status, StatusCode::NO_CONTENT);
     assert!(reply.body.is_empty());
@@ -639,17 +643,18 @@ async fn batch_limit_is_configurable() {
     mock.reply("marks.list_genres", json!({ "ok": { "genres": [] } }));
     let batch = |n| Value::Array(vec![call("marks.list_genres", json!(null)); n]);
 
-    let reply = send(&mock, json_request(batch(6))).await;
+    let reply = send(&mock, authed(json_request(batch(6)))).await;
     assert_eq!(reply.error_code(), i64::from(code::INVALID_REQUEST));
     assert!(mock.calls().is_empty());
 
-    let reply = send(&mock, json_request(batch(5))).await;
+    let reply = send(&mock, authed(json_request(batch(5)))).await;
     assert_eq!(reply.json().as_array().unwrap().len(), 5);
 
     let rpc = config::Rpc {
         max_batch: 2.try_into().unwrap(),
+        ..Default::default()
     };
-    let reply = send_to(app_with(&mock, rpc), json_request(batch(3))).await;
+    let reply = send_to(app_with(&mock, rpc), authed(json_request(batch(3)))).await;
     assert_eq!(reply.error_code(), i64::from(code::INVALID_REQUEST));
     assert_eq!(mock.calls().len(), 5);
 }
@@ -677,7 +682,11 @@ async fn batch_shares_one_session() {
     assert_eq!(mock.calls().len(), 2);
 
     mock.reject_tokens();
-    let reply = send(&mock, batch(&format!("Bearer {}", token()))).await;
+    let rpc = config::Rpc {
+        batch_requires_auth: false,
+        ..Default::default()
+    };
+    let reply = send_to(app_with(&mock, rpc), batch(&format!("Bearer {}", token()))).await;
     let reply = reply.json();
     assert_eq!(reply[0]["error"]["code"], code::METHOD_NOT_FOUND);
     for reply in &reply.as_array().unwrap()[1..] {
@@ -685,4 +694,45 @@ async fn batch_shares_one_session() {
     }
     assert_eq!(mock.tokens().len(), 2);
     assert_eq!(mock.calls().len(), 2);
+}
+
+#[tokio::test]
+async fn batches_require_authentication() {
+    let mock = Mock::default();
+    mock.reply("marks.list_genres", json!({ "ok": { "genres": [] } }));
+    let batch = || json_request(json!([call("marks.list_genres", json!(null))]));
+
+    let reply = send(&mock, batch()).await;
+    assert_eq!(reply.status, StatusCode::OK);
+    let body = reply.json();
+    assert_eq!(body["id"], Value::Null);
+    assert_eq!(body["error"]["code"], code::UNAUTHENTICATED);
+
+    let mut request = batch();
+    request
+        .headers_mut()
+        .insert(header::AUTHORIZATION, "Bearer nonsense".parse().unwrap());
+    assert_eq!(
+        send(&mock, request).await.error_code(),
+        i64::from(code::INVALID_REQUEST)
+    );
+
+    mock.reject_tokens();
+    let reply = send(&mock, authed(batch())).await;
+    assert_eq!(reply.error_code(), i64::from(code::INVALID_SESSION));
+    assert!(mock.calls().is_empty());
+
+    let rpc = config::Rpc {
+        batch_requires_auth: false,
+        ..Default::default()
+    };
+    let reply = send_to(app_with(&mock, rpc), batch()).await;
+    assert_eq!(reply.json()[0]["result"], json!({ "genres": [] }));
+    assert_eq!(mock.calls().len(), 1);
+}
+
+fn authed(mut request: Request<Body>) -> Request<Body> {
+    let value = format!("Bearer {}", token()).parse().unwrap();
+    request.headers_mut().insert(header::AUTHORIZATION, value);
+    request
 }

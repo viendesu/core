@@ -11,7 +11,8 @@
 //!
 //! A batch (an array of requests) of at most [`config::Rpc::max_batch`]
 //! elements runs sequentially in one session and is answered by an array in
-//! request order; an empty or oversized batch is rejected as a whole.
+//! request order; an empty or oversized batch is rejected as a whole, as is
+//! one without a valid session token under [`config::Rpc::batch_requires_auth`].
 //!
 //! Every dispatched call answers `200 OK`; 4xx statuses mean the body never
 //! reached the dispatcher (unsupported media type, body too large).
@@ -40,7 +41,7 @@ use crate::{
 };
 
 use self::{
-    envelope::{Id, Message, Request},
+    envelope::{Id, Message, Params, Request},
     methods::{Call, Handler},
 };
 
@@ -72,6 +73,7 @@ struct RpcState<T: Types> {
     service: T::Service,
     methods: HashMap<&'static str, Handler<SessionOf<T::Service>>>,
     max_batch: usize,
+    batch_requires_auth: bool,
 }
 
 pub fn router<T: Types>(service: T::Service, config: &config::Rpc) -> axum::Router {
@@ -79,6 +81,7 @@ pub fn router<T: Types>(service: T::Service, config: &config::Rpc) -> axum::Rout
         service: service.clone(),
         methods: methods::table(),
         max_batch: config.max_batch.get(),
+        batch_requires_auth: config.batch_requires_auth,
     });
 
     axum::Router::new()
@@ -149,6 +152,14 @@ async fn dispatch<T: Types>(
     let response = match message {
         Message::Single(request) => run(&state, &headers, format, request, &mut session).await,
         Message::Batch(requests) => {
+            if state.batch_requires_auth {
+                if let Err(failure) =
+                    authenticate::<T>(&state, &headers, format, &mut session).await
+                {
+                    return reply(format, failure);
+                }
+            }
+
             let mut responses = Vec::with_capacity(requests.len());
             for request in requests {
                 let response = match request {
@@ -165,6 +176,37 @@ async fn dispatch<T: Types>(
     match response {
         Some(body) => reply(format, body),
         None => StatusCode::NO_CONTENT.into_response(),
+    }
+}
+
+/// Makes `session` up front from a required session token; the failure is
+/// answered with `id: null`.
+async fn authenticate<T: Types>(
+    state: &RpcState<T>,
+    headers: &HeaderMap,
+    format: Format,
+    session: &mut Option<SessionResult<T>>,
+) -> Result<(), Vec<u8>> {
+    let call = Call {
+        format,
+        id: &Id::Null,
+        params: Params::Absent,
+    };
+
+    match extract::session_token(headers) {
+        Ok(Some(_)) => {}
+        Ok(None) => {
+            return Err(call.fail(
+                code::UNAUTHENTICATED,
+                "batch requests require authentication",
+            ));
+        }
+        Err(aux) => return Err(SessionFailure::Header(aux).answer(&call)),
+    }
+
+    match session.insert(self::session::<T>(&state.service, headers).await) {
+        Ok(_) => Ok(()),
+        Err(failure) => Err(failure.answer(&call)),
     }
 }
 
