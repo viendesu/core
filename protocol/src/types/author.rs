@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use eva::{data, str, str::CompactString, time::Date, zst_error};
 
-use schemars::JsonSchema;
+use eva::schemars::{self, JsonSchema};
 use serde::{Serialize, de};
 
 use crate::types::{entity, file, slug, user};

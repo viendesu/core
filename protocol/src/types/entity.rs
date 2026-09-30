@@ -55,7 +55,7 @@ use std::{
     str::{FromStr, from_utf8_unchecked},
 };
 
-use schemars::JsonSchema;
+use eva::schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize, de};
 
 #[data(

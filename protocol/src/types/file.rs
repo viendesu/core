@@ -10,7 +10,7 @@ use std::{
 };
 
 use crate::types::entity;
-use eva::{data, hash::blake3, int, str};
+use eva::{data, hash::blake3, int, schemars, str};
 
 pub type Hash = blake3::Hash;
 
@@ -50,6 +50,7 @@ const BASE_NAME_PAT: &str = r"[^/\\]+";
 /// Base file name.
 #[str(custom)]
 #[derive(schemars::JsonSchema)]
+#[schemars(crate = "eva::schemars")]
 pub struct BaseName(
     #[schemars(regex(pattern = BASE_NAME_PAT), length(max = BaseName::MAX_LEN))] str::CompactString,
 );

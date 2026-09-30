@@ -22,13 +22,6 @@ eyre = "0.6.12"
 serde_json = "1.0.137"
 serde_with = { version = "3.12.0", default-features = false, features = ["alloc", "macros"] }
 serde = "1"
-schemars = { git = "ssh://forgejo@git.viende.su:61488/VienDesu/schemars.git", features = [
-    "compact_str08",
-    "smallvec1",
-    "bytes1",
-    "url2",
-    "hashbrown015"
-] }
 
 axum = { version = "0.8.4", default-features = false }
 tower = "0.5"
@@ -41,7 +34,3 @@ viendesu-core = { path = "core/" }
 viendesu-protocol = { path = "protocol/" }
 viendesu-macros = { path = "macros/" }
 viendesu-mcp = { path = "mcp/" }
-
-# TODO: upstream.
-[patch.crates-io]
-schemars = { git = "ssh://forgejo@git.viende.su:61488/VienDesu/schemars.git", version = "1.0.0-alpha.17" }

@@ -2,7 +2,7 @@ use std::{borrow::Cow, str::FromStr};
 
 use eva::{data, url::Url};
 
-use schemars::JsonSchema;
+use eva::schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize, de};
 
 #[data(copy, error, display(doc))]

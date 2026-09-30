@@ -1,6 +1,6 @@
 use std::{future::Future, pin::Pin};
 
-use schemars::JsonSchema;
+use eva::schemars::{self, JsonSchema};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 

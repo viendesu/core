@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use eva::data;
 
-use schemars::JsonSchema;
+use eva::schemars::{self, JsonSchema};
 use serde::{Deserialize, Serialize, de};
 
 #[data(copy, ord, error, display("must be `true`"))]

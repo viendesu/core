@@ -3,7 +3,7 @@ use std::{borrow::Cow, num::NonZeroI64, str::FromStr};
 use serde::{Serialize, de};
 
 use eva::{
-    data, rand, str,
+    data, rand, schemars, str,
     str::{CompactString, HasPattern, ParseError, Seq, ascii},
     zst_error,
 };
@@ -135,6 +135,7 @@ const EMAIL_PAT: &str = r"[^@\s]+@[^@\s]+";
 /// client can address without surprises.
 #[str(custom)]
 #[derive(schemars::JsonSchema)]
+#[schemars(crate = "eva::schemars")]
 pub struct Email(
     #[schemars(regex(pattern = EMAIL_PAT), length(max = Email::MAX_LEN))] CompactString,
 );

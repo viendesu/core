@@ -9,7 +9,6 @@ default = []
 [dependencies]
 eva.workspace = true
 serde.workspace = true
-schemars.workspace = true
 
 eyre.workspace = true
 

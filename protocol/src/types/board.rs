@@ -8,7 +8,7 @@ use eva::{
     time::Timestamp,
     zst_error,
 };
-use schemars::JsonSchema;
+use eva::schemars::{self, JsonSchema};
 use serde::{Serialize, de};
 
 #[data(copy)]
