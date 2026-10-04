@@ -87,7 +87,6 @@ impl FromStr for BaseName {
 
 /// ID of the server.
 #[int(u8, 0..8)]
-#[derive(Hash)]
 pub enum Server {}
 
 impl Server {
