@@ -53,6 +53,9 @@ pub mod update {
         pub tags: Patch<mark::Tags>,
         pub screenshots: Patch<game::Screenshots>,
         pub published: Patch<bool>,
+        /// Replaces the relations the caller can see; ones to games hidden
+        /// from the caller are kept.
+        pub related: Patch<game::Related>,
     }
 
     #[data]
@@ -76,6 +79,10 @@ pub mod update {
         InvalidImage(#[from] errors::files::InvalidImage),
         #[display("{_0}")]
         FileNotFound(#[from] errors::files::NotFound),
+        #[display("{_0}")]
+        BadRelation(#[from] errors::games::BadRelation),
+        #[display("{_0}")]
+        TooManyRelations(#[from] errors::games::TooManyRelations),
     }
 }
 
@@ -240,6 +247,9 @@ pub mod get {
         /// Also fetch the first page of the game's top-level comments.
         #[serde(default)]
         pub comments: bool,
+        /// Also fetch the related games.
+        #[serde(default)]
+        pub related: bool,
     }
 
     #[data]
@@ -264,6 +274,13 @@ pub mod get {
         /// via `comments`.
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         pub comments: Vec<comment::Comment>,
+        /// Relations to the games visible to the caller; their authors are
+        /// merged into `authors`. Empty unless requested via `related`.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        pub related: Vec<game::Relation>,
+        /// Miniatures of the games in `related`.
+        #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+        pub games: HashMap<game::Id, game::Mini>,
     }
 
     #[data(error)]

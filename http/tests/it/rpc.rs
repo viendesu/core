@@ -164,6 +164,7 @@ async fn msgpack_call_decodes_params_and_encodes_result() {
             "resolve_marks": true,
             "latest_articles": false,
             "comments": true,
+            "related": false,
         })
     );
 }

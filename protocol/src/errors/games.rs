@@ -13,6 +13,16 @@ pub struct AlreadyTaken {
     pub slug: game::Slug,
 }
 
+#[data(error, copy, display("the {game} is listed twice or relates to itself"))]
+pub struct BadRelation {
+    pub game: game::Id,
+}
+
+#[data(error, copy, display("the {game} has too many related games"))]
+pub struct TooManyRelations {
+    pub game: game::Id,
+}
+
 #[data(error, copy, display("the {game} was not found"))]
 pub struct NotFound {
     pub game: game::Selector,

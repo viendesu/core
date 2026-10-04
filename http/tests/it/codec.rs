@@ -108,12 +108,14 @@ fn protocol_values() {
         resolve_marks: true,
         latest_articles: false,
         comments: true,
+        related: false,
     });
     assert_same_shape(&games::get::Args {
         game: game_id().into(),
         resolve_marks: false,
         latest_articles: true,
         comments: false,
+        related: true,
     });
 
     assert_same_shape(&games::search::Args {
@@ -141,6 +143,14 @@ fn protocol_values() {
         tags: Patch::Keep,
         screenshots: Patch::Keep,
         published: Patch::Change(true),
+        related: Patch::Change(game::Related(
+            [game::Relation {
+                game: game_id(),
+                kind: game::RelationKind::SideStory,
+            }]
+            .try_into()
+            .unwrap(),
+        )),
     });
 
     assert_same_shape(&comments::list::Ok {

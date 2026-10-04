@@ -127,6 +127,57 @@ pub struct Game {
     pub badges: mark::Badges,
 }
 
+/// How the related game relates to this one, VNDB-style.
+#[data(copy, ord, display(name))]
+pub enum RelationKind {
+    Sequel,
+    Prequel,
+    SideStory,
+    /// The related game is the main story of this side story.
+    ParentStory,
+    Fandisc,
+    /// The related game is the original of this fandisc.
+    Original,
+    SameSetting,
+    SameSeries,
+    SharesCharacters,
+    AlternativeVersion,
+}
+
+impl RelationKind {
+    /// The same relation seen from the related game.
+    pub const fn inverse(self) -> Self {
+        match self {
+            Self::Sequel => Self::Prequel,
+            Self::Prequel => Self::Sequel,
+            Self::SideStory => Self::ParentStory,
+            Self::ParentStory => Self::SideStory,
+            Self::Fandisc => Self::Original,
+            Self::Original => Self::Fandisc,
+            Self::SameSetting
+            | Self::SameSeries
+            | Self::SharesCharacters
+            | Self::AlternativeVersion => self,
+        }
+    }
+}
+
+/// Symmetric link to another game: `kind` is what `game` is to this one,
+/// and the other game sees the inverse kind.
+#[data(copy)]
+pub struct Relation {
+    pub game: Id,
+    pub kind: RelationKind,
+}
+
+/// Maximum number of relations a game can take part in.
+pub const MAX_RELATED: usize = 16;
+
+/// The full set of the game's relations; each game at most once.
+#[data]
+#[derive(Default)]
+pub struct Related(pub array::ImmutableHeap<Relation, MAX_RELATED>);
+
 /// Game miniature: enough to render a link to the game.
 #[data]
 pub struct Mini {
