@@ -197,7 +197,9 @@ async fn tools_list() {
     let search = tools.iter().find(|t| t["name"] == "games_search").unwrap();
     let description = search["description"].as_str().unwrap();
     assert!(
-        description.starts_with("Searches the catalog; the text query matches titles only.\n"),
+        description.starts_with(
+            "Searches the catalog; the text query matches titles and alternative titles only.\n"
+        ),
         "{description}"
     );
     assert!(

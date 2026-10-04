@@ -43,6 +43,7 @@ pub mod update {
     #[data]
     pub struct Update {
         pub title: Patch<game::Title>,
+        pub alt_titles: Patch<game::AltTitles>,
         pub description: Patch<Option<game::Description>>,
         pub slug: Patch<game::Slug>,
         pub thumbnail: Patch<Option<file::Id>>,
@@ -194,6 +195,8 @@ pub mod create {
     #[data]
     pub struct Args {
         pub title: game::Title,
+        #[serde(default)]
+        pub alt_titles: game::AltTitles,
         pub description: Option<game::Description>,
         pub thumbnail: Option<file::Id>,
         pub author: author::Id,

@@ -85,7 +85,7 @@ pub fn endpoints(args: TokenStream) -> TokenStream {
                 .read_with("search", |m| {
                     m.doc(
                         "
-                        Searches the catalog; the text query matches titles only.
+                        Searches the catalog; the text query matches titles and alternative titles only.
 
                         Paginated via the `after` key of `sort_by`.
                         ",

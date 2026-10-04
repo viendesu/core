@@ -8,6 +8,12 @@ use crate::types::{author, entity::define_eid, file, http_url::HttpUrl, mark, sl
 #[derive(Default)]
 pub struct Screenshots(pub array::ImmutableHeap<file::Id, 8>);
 
+/// Alternative titles: original, romanized, abbreviations; searched as
+/// the main one.
+#[data]
+#[derive(Default)]
+pub struct AltTitles(pub array::ImmutableHeap<Title, 8>);
+
 /// Query for searching.
 #[str(newtype)]
 pub struct SearchQuery(pub CompactString);
@@ -114,6 +120,8 @@ pub struct Game {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vndb: Option<VndbId>,
     pub title: Title,
+    #[serde(default)]
+    pub alt_titles: AltTitles,
     pub description: Option<Description>,
     pub mean_rating: MeanRating,
     pub author: author::Id,

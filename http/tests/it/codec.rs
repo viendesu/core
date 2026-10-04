@@ -70,6 +70,7 @@ fn game() -> game::Game {
         thumbnail: Some(file_id()),
         vndb: Some(game::VndbId(17)),
         title: "My Game".parse().unwrap(),
+        alt_titles: game::AltTitles(ImmutableHeap::try_from(vec!["MG".parse().unwrap()]).unwrap()),
         description: None,
         mean_rating: game::MeanRating {
             mean: game::RatingValue::POS75,
@@ -133,6 +134,7 @@ fn protocol_values() {
 
     assert_same_shape(&games::update::Update {
         title: Patch::Change("New".parse().unwrap()),
+        alt_titles: Patch::Keep,
         description: Patch::Change(None),
         slug: Patch::Keep,
         thumbnail: Patch::Keep,
@@ -195,6 +197,7 @@ fn protocol_values() {
 fn dates_decode_from_both_codecs() {
     let args = games::create::Args {
         title: "T".parse().unwrap(),
+        alt_titles: Default::default(),
         description: None,
         thumbnail: None,
         author: author_id(),
