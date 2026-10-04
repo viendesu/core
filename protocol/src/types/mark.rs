@@ -24,3 +24,9 @@ entity::define_eid! {
     /// Game badge.
     pub struct Badge(Badge);
 }
+
+#[data]
+pub struct TextEntry<I> {
+    pub id: I,
+    pub text: str::CompactString,
+}

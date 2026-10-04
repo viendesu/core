@@ -2,8 +2,10 @@ use crate::errors::Generic;
 
 pub type Response<O, E> = Result<O, Generic<E>>;
 
-pub mod marks;
+pub mod badges;
+pub mod genres;
 pub mod tabs;
+pub mod tags;
 
 pub mod sys;
 

@@ -10,8 +10,10 @@ pub mod threads;
 pub mod articles;
 pub mod blogs;
 
-pub mod marks;
+pub mod badges;
+pub mod genres;
 pub mod tabs;
+pub mod tags;
 
 pub mod auth;
 pub mod authors;

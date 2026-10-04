@@ -172,16 +172,14 @@ async fn msgpack_call_decodes_params_and_encodes_result() {
 #[tokio::test]
 async fn accept_picks_the_response_codec() {
     let mock = Mock::default();
-    mock.reply("marks.list_genres", json!({ "ok": { "genres": ["rpg"] } }));
+    mock.reply("genres.list", json!({ "ok": { "genres": ["rpg"] } }));
 
     let request = post("application/json; charset=utf-8")
         .header(
             header::ACCEPT,
             "application/json;q=0.5, application/msgpack",
         )
-        .body(Body::from(
-            call("marks.list_genres", json!(null)).to_string(),
-        ))
+        .body(Body::from(call("genres.list", json!(null)).to_string()))
         .unwrap();
     let reply = send(&mock, request).await;
 
@@ -576,14 +574,14 @@ async fn batch_answers_in_request_order() {
     let mock = Mock::default();
     let auth = json!({ "user": user_id(), "role": "admin" });
     mock.reply("users.check_auth", json!({ "ok": auth }));
-    mock.reply("marks.list_genres", json!({ "ok": { "genres": ["rpg"] } }));
+    mock.reply("genres.list", json!({ "ok": { "genres": ["rpg"] } }));
 
     let batch = json!([
         { "jsonrpc": "2.0", "id": "a", "method": "users.check_auth" },
         { "jsonrpc": "2.0", "method": "users.check_auth" },
         { "jsonrpc": "2.0", "id": 2, "method": "games.nope" },
         7,
-        { "jsonrpc": "2.0", "id": 3, "method": "marks.list_genres" },
+        { "jsonrpc": "2.0", "id": 3, "method": "genres.list" },
     ]);
     let reply = send(&mock, authed(json_request(batch))).await;
 
@@ -609,11 +607,11 @@ async fn batch_answers_in_request_order() {
 #[tokio::test]
 async fn msgpack_batch() {
     let mock = Mock::default();
-    mock.reply("marks.list_genres", json!({ "ok": { "genres": ["rpg"] } }));
+    mock.reply("genres.list", json!({ "ok": { "genres": ["rpg"] } }));
 
     let batch = json!([
-        call("marks.list_genres", json!(null)),
-        [call("marks.list_genres", json!(null))],
+        call("genres.list", json!(null)),
+        [call("genres.list", json!(null))],
     ]);
     let reply = send(&mock, authed(msgpack_request(batch))).await;
 
@@ -642,8 +640,8 @@ async fn batch_of_notifications_has_no_body() {
 #[tokio::test]
 async fn batch_limit_is_configurable() {
     let mock = Mock::default();
-    mock.reply("marks.list_genres", json!({ "ok": { "genres": [] } }));
-    let batch = |n| Value::Array(vec![call("marks.list_genres", json!(null)); n]);
+    mock.reply("genres.list", json!({ "ok": { "genres": [] } }));
+    let batch = |n| Value::Array(vec![call("genres.list", json!(null)); n]);
 
     let reply = send(&mock, authed(json_request(batch(6)))).await;
     assert_eq!(reply.error_code(), i64::from(code::INVALID_REQUEST));
@@ -664,13 +662,13 @@ async fn batch_limit_is_configurable() {
 #[tokio::test]
 async fn batch_shares_one_session() {
     let mock = Mock::default();
-    mock.reply("marks.list_genres", json!({ "ok": { "genres": [] } }));
+    mock.reply("genres.list", json!({ "ok": { "genres": [] } }));
 
     let batch = |authorization: &str| {
         let body = json!([
             call("games.nope", json!({})),
-            call("marks.list_genres", json!(null)),
-            call("marks.list_genres", json!(null)),
+            call("genres.list", json!(null)),
+            call("genres.list", json!(null)),
         ]);
         post("application/json")
             .header(header::AUTHORIZATION, authorization)
@@ -701,8 +699,8 @@ async fn batch_shares_one_session() {
 #[tokio::test]
 async fn batches_require_authentication() {
     let mock = Mock::default();
-    mock.reply("marks.list_genres", json!({ "ok": { "genres": [] } }));
-    let batch = || json_request(json!([call("marks.list_genres", json!(null))]));
+    mock.reply("genres.list", json!({ "ok": { "genres": [] } }));
+    let batch = || json_request(json!([call("genres.list", json!(null))]));
 
     let reply = send(&mock, batch()).await;
     assert_eq!(reply.status, StatusCode::OK);

@@ -186,29 +186,23 @@ pub fn endpoints(args: TokenStream) -> TokenStream {
                 })
                 .write_with("like", |m| m.doc("Likes a comment or retracts the like."))
         })
-        .segment("marks", |seg| {
-            seg.doc("Game marks: tags, genres and badges.")
-                .service("tags", |svc| {
-                    svc.doc("Game tags.")
-                        .read_with("list", |m| {
-                            m.endpoint("list_tags")
-                                .doc("Lists tags matching the query, all without one.")
-                        })
-                        .write_with("add", |m| m.endpoint("add_tag").doc("Registers a tag."))
+        .service("tags", |svc| {
+            svc.doc("Game tags.")
+                .read_with("list", |m| {
+                    m.doc("Lists tags matching the query, all without one.")
                 })
-                .service("genres", |svc| {
-                    svc.doc("Game genres.").read_with("list", |m| {
-                        m.endpoint("list_genres").doc("Lists all genres.")
-                    })
+                .write_with("add", |m| m.doc("Registers a tag."))
+        })
+        .service("genres", |svc| {
+            svc.doc("Game genres.")
+                .read_with("list", |m| m.doc("Lists all genres."))
+        })
+        .service("badges", |svc| {
+            svc.doc("Game badges.")
+                .read_with("list", |m| {
+                    m.doc("Lists badges matching the query, all without one.")
                 })
-                .service("badges", |svc| {
-                    svc.doc("Game badges.")
-                        .read_with("list", |m| {
-                            m.endpoint("list_badges")
-                                .doc("Lists badges matching the query, all without one.")
-                        })
-                        .write_with("add", |m| m.endpoint("add_badge").doc("Registers a badge."))
-                })
+                .write_with("add", |m| m.doc("Registers a badge."))
         })
         .service("tabs", |svc| {
             svc.doc("User profile tabs: named lists of games or authors.")

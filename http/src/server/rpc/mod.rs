@@ -1,7 +1,7 @@
 //! JSON-RPC 2.0 endpoint at `POST /rpc`.
 //!
 //! Every service endpoint is a method named `<module>.<endpoint>` (e.g.
-//! `games.get`, `marks.list_tags`) whose `params` are exactly the protocol
+//! `games.get`, `tags.list`) whose `params` are exactly the protocol
 //! `Args` of that endpoint. The envelope is JSON-RPC 2.0 in either codec:
 //! JSON, or MessagePack carrying a map with the same keys. `Content-Type`
 //! selects the request codec, `Accept` the response one (the request codec by

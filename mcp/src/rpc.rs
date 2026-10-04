@@ -16,9 +16,9 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use viendesu_core::service::{
-    CallStep as _, SessionMaker, SessionOf, authz::Authentication as _, marks::Genres as _,
+    CallStep as _, SessionMaker, SessionOf, authz::Authentication as _, genres::Genres as _,
 };
-use viendesu_protocol::{requests::marks, types::session};
+use viendesu_protocol::{requests::genres, types::session};
 
 use crate::registry::{CallOutcome, Tools};
 
@@ -148,10 +148,10 @@ where
 
 async fn genre_slugs<S: SessionMaker>(service: &S) -> Option<String> {
     let mut session = service.make_session().await.ok()?;
-    let marks::list_genres::Ok { genres } = session
+    let genres::list::Ok { genres } = session
         .genres()
         .list()
-        .call(marks::list_genres::Args {})
+        .call(genres::list::Args {})
         .await
         .ok()?;
 

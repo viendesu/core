@@ -68,11 +68,11 @@ pub mod update {
         #[display("{_0}")]
         AlreadyTaken(#[from] errors::games::AlreadyTaken),
         #[display("{_0}")]
-        NoSuchTag(#[from] errors::marks::NoSuchTag),
+        NoSuchTag(#[from] errors::tags::NoSuchTag),
         #[display("{_0}")]
-        NoSuchBadge(#[from] errors::marks::NoSuchBadge),
+        NoSuchBadge(#[from] errors::badges::NoSuchBadge),
         #[display("{_0}")]
-        NoSuchGenre(#[from] errors::marks::NoSuchGenre),
+        NoSuchGenre(#[from] errors::genres::NoSuchGenre),
         #[display("{_0}")]
         UnexpectedFileClass(#[from] errors::files::UnexpectedFileClass),
         #[display("{_0}")]
@@ -222,9 +222,9 @@ pub mod create {
         #[display("{_0}")]
         AlreadyTaken(#[from] errors::games::AlreadyTaken),
         #[display("{_0}")]
-        NoSuchTag(#[from] errors::marks::NoSuchTag),
+        NoSuchTag(#[from] errors::tags::NoSuchTag),
         #[display("{_0}")]
-        NoSuchGenre(#[from] errors::marks::NoSuchGenre),
+        NoSuchGenre(#[from] errors::genres::NoSuchGenre),
         #[display("{_0}")]
         UnexpectedFileClass(#[from] errors::files::UnexpectedFileClass),
         #[display("{_0}")]
