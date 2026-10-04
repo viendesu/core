@@ -12,9 +12,8 @@ entity::define_eid! {
 pub struct Text(str::CompactString);
 
 /// Number of likes from users.
-#[data(copy, ord, display("{_0}"))]
-#[derive(Hash)]
-pub struct Likes(pub u32);
+#[int(newtype)]
+pub struct Likes(u32);
 
 #[int(u8, 1..=64)]
 pub enum Limit {}

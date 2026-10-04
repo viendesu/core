@@ -156,9 +156,8 @@ impl Default for MeanRating {
 }
 
 /// Number of votes from users.
-#[data(copy, ord, display("{_0}"))]
-#[derive(Hash)]
-pub struct Votes(pub u32);
+#[int(newtype)]
+pub struct Votes(u32);
 
 define_eid! {
     /// ID of the game.

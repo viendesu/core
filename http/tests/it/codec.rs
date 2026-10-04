@@ -73,7 +73,7 @@ fn game() -> game::Game {
         description: None,
         mean_rating: game::MeanRating {
             mean: game::RatingValue::POS75,
-            votes: game::Votes(12),
+            votes: game::Votes::new(12),
         },
         author: author_id(),
         release_date: Some(release_date()),
@@ -150,7 +150,7 @@ fn protocol_values() {
             text: Some("hello".parse().unwrap()),
             at: ts(),
             edited_at: None,
-            likes: comment::Likes(5),
+            likes: comment::Likes::new(5),
             replies: 2,
             own_liked: true,
             deleted: false,
