@@ -188,6 +188,9 @@ pub fn endpoints(args: TokenStream) -> TokenStream {
         })
         .service("tags", |svc| {
             svc.doc("Game tags.")
+                .read_with("get_many", |m| {
+                    m.doc("Gets tags by id, at most 16; unknown ids are skipped.")
+                })
                 .read_with("list", |m| {
                     m.doc("Lists tags matching the query, all without one.")
                 })

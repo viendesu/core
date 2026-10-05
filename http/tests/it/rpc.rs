@@ -298,7 +298,7 @@ async fn every_serde_endpoint_is_routed() {
 
     let mock = Mock::default();
     let methods = viendesu_core::for_each_endpoint!(methods);
-    assert_eq!(methods.len(), 57);
+    assert_eq!(methods.len(), 58);
 
     for (method, stream) in methods {
         let reply = send(&mock, json_request(call(method, json!({})))).await;
