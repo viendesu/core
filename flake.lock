@@ -94,7 +94,11 @@
     },
     "root": {
       "inputs": {
-        "eva": "eva"
+        "eva": "eva",
+        "flake-utils": [
+          "eva",
+          "flake-utils"
+        ]
       }
     },
     "rust-analyzer-src": {
