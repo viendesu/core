@@ -6,7 +6,6 @@ edition = "2024"
 [features]
 default = []
 tokio = ["dep:tokio"]
-test-util = ["dep:tokio"]
 
 [dependencies]
 viendesu-protocol.workspace = true

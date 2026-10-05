@@ -7,7 +7,7 @@ use crate::rt;
 #[cfg(feature = "tokio")]
 pub mod real;
 
-#[cfg(feature = "test-util")]
+#[cfg(feature = "tokio")]
 pub mod testing;
 
 eva::trait_set! {
