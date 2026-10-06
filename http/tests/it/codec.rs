@@ -79,15 +79,43 @@ fn game() -> game::Game {
         author: author_id(),
         release_date: Some(release_date()),
         publication: None,
-        downloads: vec![game::Download {
-            platform: game::Platform::Pc {
-                linux: true,
-                mac: false,
-                windows: true,
-            },
-            link: game::DownloadLink::External("https://example.com/a".parse().unwrap()),
-            label: CompactString::from("pc"),
-        }],
+        releases: game::Releases(
+            [game::Release {
+                name: "1.0".parse().unwrap(),
+                description: Some("**Full** release".parse().unwrap()),
+                links: [game::Link {
+                    url: "https://example.com/tl".parse().unwrap(),
+                    label: None,
+                }]
+                .try_into()
+                .unwrap(),
+                downloads: [
+                    game::Download {
+                        platforms: game::Platforms {
+                            windows: true,
+                            linux: true,
+                            ..Default::default()
+                        },
+                        link: game::DownloadLink::External(
+                            "https://example.com/a".parse().unwrap(),
+                        ),
+                        label: CompactString::from("pc"),
+                    },
+                    game::Download {
+                        platforms: game::Platforms {
+                            android: true,
+                            ..Default::default()
+                        },
+                        link: game::DownloadLink::Dedicated(file_id()),
+                        label: CompactString::from("apk"),
+                    },
+                ]
+                .try_into()
+                .unwrap(),
+            }]
+            .try_into()
+            .unwrap(),
+        ),
         screenshots: game::Screenshots(ImmutableHeap::try_from(vec![file_id()]).unwrap()),
         tags: mark::Tags::default(),
         genres: mark::Genres(
@@ -122,7 +150,14 @@ fn protocol_values() {
     assert_same_shape(&games::search::Args {
         query: Some("visual novel".parse().unwrap()),
         author: Some(author::Selector::Id(author_id())),
-        include: Default::default(),
+        include: games::search::Marks {
+            platforms_any: game::Platforms {
+                mac: true,
+                ios: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
         exclude: Default::default(),
         order: games::search::Order::Asc,
         sort_by: games::search::SortBy::PublishedAt {
@@ -140,7 +175,7 @@ fn protocol_values() {
         thumbnail: Patch::Keep,
         vndb: Patch::Change(Some(game::VndbId(97))),
         genres: Patch::Keep,
-        downloads: Patch::Keep,
+        releases: Patch::Change(game::Releases::default()),
         badges: Patch::Keep,
         tags: Patch::Keep,
         screenshots: Patch::Keep,
@@ -204,7 +239,7 @@ fn dates_decode_from_both_codecs() {
         tags: Default::default(),
         screenshots: Default::default(),
         genres: Default::default(),
-        downloads: Vec::new(),
+        releases: Default::default(),
         slug: None,
         vndb: None,
         release_date: Some(release_date()),

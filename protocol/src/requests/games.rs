@@ -49,7 +49,7 @@ pub mod update {
         pub thumbnail: Patch<Option<file::Id>>,
         pub vndb: Patch<Option<game::VndbId>>,
         pub genres: Patch<mark::Genres>,
-        pub downloads: Patch<Vec<game::Download>>,
+        pub releases: Patch<game::Releases>,
         pub badges: Patch<mark::Badges>,
         pub tags: Patch<mark::Tags>,
         pub screenshots: Patch<game::Screenshots>,
@@ -109,6 +109,13 @@ pub mod search {
         pub genres_all: Arr<mark::Genre>,
         #[serde(default)]
         pub genres_any: Arr<mark::Genre>,
+
+        /// Matched against the platforms of the game's 4 newest releases.
+        #[serde(default)]
+        pub platforms_all: game::Platforms,
+        /// Matched against the platforms of the game's 4 newest releases.
+        #[serde(default)]
+        pub platforms_any: game::Platforms,
     }
 
     type SortKey<K> = (K, game::Id);
@@ -207,7 +214,7 @@ pub mod create {
         #[serde(default)]
         pub genres: mark::Genres,
         #[serde(default)]
-        pub downloads: Vec<game::Download>,
+        pub releases: game::Releases,
         pub slug: Option<game::Slug>,
         pub vndb: Option<game::VndbId>,
         pub release_date: Option<game::ReleaseDate>,
@@ -259,7 +266,7 @@ pub mod get {
     pub struct Ok {
         // TODO: include if requested
         // - translation maps.
-        // - downloads
+        // - releases
         pub game: game::Game,
         /// The caller's own rating of the game, if any.
         #[serde(default, skip_serializing_if = "Option::is_none")]

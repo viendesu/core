@@ -30,6 +30,8 @@ const INSTRUCTIONS: &str = "VienDesu! is a Russian visual novel catalog and foru
     To find games by theme or genre, call games_search with genre slugs in \
     include.genres_any. Its text query matches game titles only — never put \
     themes or genres there. \
+    To find games for a platform, set include.platforms_any to flags, e.g. \
+    {\"android\": true} (keys: windows, linux, mac, android, ios). \
     Authenticated requests (Authorization: Bearer <session token>) may also \
     act on behalf of the user, subject to their role.";
 

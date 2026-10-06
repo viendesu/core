@@ -86,15 +86,28 @@ pub struct Marks {
     pub badges: HashMap<mark::Badge, CompactString>,
 }
 
+/// Platforms a download runs on, any combination.
 #[data(copy)]
-pub enum Platform {
-    Android,
-    Ios,
-    Pc {
-        linux: bool,
-        mac: bool,
-        windows: bool,
-    },
+#[derive(Default)]
+#[serde(default)]
+pub struct Platforms {
+    pub windows: bool,
+    pub linux: bool,
+    pub mac: bool,
+    pub android: bool,
+    pub ios: bool,
+}
+
+impl Platforms {
+    pub const fn union(self, other: Self) -> Self {
+        Self {
+            windows: self.windows || other.windows,
+            linux: self.linux || other.linux,
+            mac: self.mac || other.mac,
+            android: self.android || other.android,
+            ios: self.ios || other.ios,
+        }
+    }
 }
 
 #[data]
@@ -105,10 +118,43 @@ pub enum DownloadLink {
 
 #[data]
 pub struct Download {
-    pub platform: Platform,
+    pub platforms: Platforms,
     pub link: DownloadLink,
     pub label: CompactString,
 }
+
+/// Link that is not a download: a translation page, a store page.
+#[data]
+pub struct Link {
+    pub url: HttpUrl,
+    /// Shown instead of the URL.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<CompactString>,
+}
+
+pub const MAX_RELEASES: usize = 32;
+pub const MAX_RELEASE_LINKS: usize = 16;
+pub const MAX_RELEASE_DOWNLOADS: usize = 64;
+
+/// A build, an edition or a translation of the game.
+#[data]
+pub struct Release {
+    pub name: ReleaseName,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<Description>,
+    #[serde(default)]
+    pub links: array::ImmutableHeap<Link, MAX_RELEASE_LINKS>,
+    #[serde(default)]
+    pub downloads: array::ImmutableHeap<Download, MAX_RELEASE_DOWNLOADS>,
+}
+
+/// How many of the newest releases give a game its platforms in search.
+pub const SEARCHED_RELEASES: usize = 4;
+
+/// Newest first, in the order the author keeps them.
+#[data]
+#[derive(Default)]
+pub struct Releases(pub array::ImmutableHeap<Release, MAX_RELEASES>);
 
 #[data]
 pub struct Game {
@@ -127,7 +173,8 @@ pub struct Game {
     pub author: author::Id,
     pub release_date: Option<ReleaseDate>,
     pub publication: Option<Publication>,
-    pub downloads: Vec<Download>,
+    #[serde(default)]
+    pub releases: Releases,
 
     pub screenshots: Screenshots,
     pub tags: mark::Tags,
@@ -248,3 +295,7 @@ pub struct Title(CompactString);
 /// Game description.
 #[str(newtype)]
 pub struct Description(CompactString);
+
+/// Release name.
+#[str(newtype)]
+pub struct ReleaseName(CompactString);
