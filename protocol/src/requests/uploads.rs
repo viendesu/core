@@ -1,6 +1,9 @@
+use crate::requests::Response;
 use std::num::NonZeroU64;
 
-use eva::{data, str};
+pub use Uploads::{abort, finish, list_pending};
+
+use eva::{data, service, str};
 
 use crate::{
     errors,
@@ -9,16 +12,8 @@ use crate::{
 };
 
 pub mod start {
-    //! # Upload file to the server.
-    //!
-    //! The following quotas apply:
-    //! - Rate limiting - by bytes, temporal and permanent
-    //! - Concurrent uploads limit - also by bytes
-    //!
-    //! Quotas are applied per-class.
-
+    pub use super::Uploads::start::*;
     use super::*;
-
     #[data(copy)]
     pub enum ImageType {
         #[serde(alias = "image/png")]
@@ -30,108 +25,67 @@ pub mod start {
         #[serde(alias = "image/bmp")]
         Bmp,
     }
-
     #[data]
     pub enum FileClass {
         Image(ImageType),
         GameFile,
     }
+}
 
-    #[data]
-    pub struct Args {
+/// File uploads: `start` reserves one, `finish` streams the bytes.
+#[service(result = Response)]
+pub trait Uploads {
+    /// Reserves an upload against the per-class byte quotas.
+    #[flags(write_op)]
+    #[errors(
+        errors::uploads::QuotaExceeded,
+        errors::uploads::SimUpQuotaExceeded,
+        errors::uploads::FileTooBig
+    )]
+    fn start(
         /// Name of the file. Mainly serves as a hint to user to not
         /// download files with "scary" names. Don't set if that doesn't
         /// matter.
-        pub name: Option<file::BaseName>,
-
+        name: Option<file::BaseName>,
         /// Hash of the file. If specified - verify hashes when finishing.
-        pub hash: Option<file::Hash>,
-
+        hash: Option<file::Hash>,
         /// Class of the file.
-        pub class: FileClass,
-
+        class: crate::requests::uploads::start::FileClass,
         /// Size of the file to upload. Must be known
         /// prior to upload, streaming is not supported.
-        pub size: NonZeroU64,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub upload: upload::Id,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        QuotaExceeded(#[from] errors::uploads::QuotaExceeded),
-        #[display("{_0}")]
-        SimUpQuotaExceeded(#[from] errors::uploads::SimUpQuotaExceeded),
-        #[display("{_0}")]
-        FileTooBig(#[from] errors::uploads::FileTooBig),
-    }
-}
-
-pub mod finish {
-    use super::*;
-
-    #[data(not(Debug, serde, schemars, Clone, PartialEq))]
-    pub struct Args {
-        pub id: upload::Id,
-        pub stream: UploadStream<'static>,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub file: file::Id,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        UnableToValidateClass(#[from] errors::uploads::UnableToValidateClass),
-        #[display("{_0}")]
-        NotFound(#[from] errors::uploads::NotFound),
-        #[display("{_0}")]
-        ConcurrentUploadInProgress(#[from] errors::uploads::ConcurrentUploadInProgress),
-        #[display("{_0}")]
-        HashMismatch(#[from] errors::uploads::HashMismatch),
-        #[display("{_0}")]
-        Overuploading(#[from] errors::uploads::Overuploading),
-        #[display("{_0}")]
-        Underuploading(#[from] errors::uploads::Underuploading),
-        #[display("{_0}")]
-        Aborted(#[from] errors::uploads::Aborted),
-    }
-}
-
-pub mod abort {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub upload: upload::Id,
-    }
-
-    #[data(copy)]
-    pub struct Ok(pub True);
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::uploads::NotFound),
-    }
-}
-
-pub mod list_pending {
-    use super::*;
-
-    #[data]
-    pub struct Args {}
-
-    #[data]
-    pub struct Ok {
-        pub uploads: Vec<upload::Upload>,
-    }
-
-    pub type Err = errors::Impossible;
+        size: NonZeroU64,
+    ) -> ok! {
+        upload: upload::Id,
+    };
+    /// Streams the file contents of an upload.
+    ///
+    /// The upload is consumed whatever the outcome; a failed one is
+    /// started anew.
+    #[flags(write_op, stream)]
+    #[args(data(not(Debug, serde, schemars, Clone, PartialEq)))]
+    #[errors(
+        errors::uploads::UnableToValidateClass,
+        errors::uploads::NotFound,
+        errors::uploads::ConcurrentUploadInProgress,
+        errors::uploads::HashMismatch,
+        errors::uploads::Overuploading,
+        errors::uploads::Underuploading,
+        errors::uploads::Aborted
+    )]
+    fn finish(
+        id: upload::Id,
+        stream: UploadStream<'static>,
+    ) -> ok! {
+        file: file::Id,
+    };
+    /// Cancels an unfinished upload.
+    #[flags(write_op)]
+    #[ok(data(copy))]
+    #[errors(errors::uploads::NotFound)]
+    fn abort(upload: upload::Id) -> True;
+    /// Lists the caller's unfinished uploads.
+    #[error(errors::Impossible)]
+    fn list_pending() -> ok! {
+        uploads: Vec<upload::Upload>,
+    };
 }

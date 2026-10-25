@@ -1,6 +1,9 @@
+use crate::requests::Response;
 use std::collections::HashMap;
 
-use eva::{data, int};
+pub use Tabs::{delete, insert};
+
+use eva::{data, int, service};
 
 use crate::{
     errors,
@@ -8,56 +11,27 @@ use crate::{
 };
 
 pub mod list {
+    pub use super::Tabs::list::*;
     use super::*;
-
-    #[data]
-    pub struct Args {
-        pub user: user::Id,
-    }
-
     #[data]
     pub enum Tab {
         Games(tab::Id),
         Authors(tab::Id),
     }
-
-    #[data]
-    pub struct Ok {
-        pub tabs: Vec<Tab>,
-    }
-
-    #[data(error, display("_"))]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::users::NotFound),
-    }
 }
 
 pub mod list_items {
+    pub use super::Tabs::list_items::*;
     use super::*;
-
     #[int(u8, 1..=64)]
     pub enum Limit {}
-
     impl Default for Limit {
         fn default() -> Self {
             Self::POS16
         }
     }
-
     #[data]
-    pub struct Args {
-        pub tab: tab::Id,
-        pub user: user::Id,
-        pub start_from: Option<entity::Id>,
-        #[serde(default)]
-        pub limit: Limit,
-        #[serde(default)]
-        pub resolve_marks: bool,
-    }
-
-    #[data]
-    pub enum Ok {
+    pub enum Value {
         Games {
             items: Vec<tab::TabItem<game::Game>>,
             #[serde(default)]
@@ -70,62 +44,43 @@ pub mod list_items {
             users: HashMap<user::Id, user::Mini>,
         },
     }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        InvalidItemId(#[from] errors::tabs::InvalidItemId),
-        #[display("{_0}")]
-        NoSuchTab(#[from] errors::tabs::NoSuchTab),
-    }
 }
 
-pub mod insert {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub user: user::Id,
-        pub tab: tab::Id,
-        pub item: entity::Id,
-    }
-
-    #[data]
-    pub struct Ok(pub True);
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        InvalidKind(#[from] errors::tabs::InvalidKind),
-        #[display("{_0}")]
-        NoSuchTab(#[from] errors::tabs::NoSuchTab),
-        #[display("{_0}")]
-        InvalidItemId(#[from] errors::tabs::InvalidItemId),
-        #[display("{_0}")]
-        Duplicate(#[from] errors::tabs::Duplicate),
-    }
-}
-
-pub mod delete {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub user: user::Id,
-        pub tab: tab::Id,
-        pub item: entity::Id,
-    }
-
-    #[data(copy)]
-    pub struct Ok(pub True);
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        InvalidItemId(#[from] errors::tabs::InvalidItemId),
-        #[display("{_0}")]
-        NoSuchItem(#[from] errors::tabs::NoSuchItem),
-        #[display("{_0}")]
-        NoSuchTab(#[from] errors::tabs::NoSuchTab),
-    }
+/// User profile tabs: named lists of games or authors.
+#[service(result = Response)]
+pub trait Tabs {
+    /// Lists tabs of a user.
+    #[errors(errors::users::NotFound)]
+    fn list(
+        user: user::Id,
+    ) -> ok! {
+        tabs: Vec<crate::requests::tabs::list::Tab>,
+    };
+    /// Lists items of a tab, paginated via `start_from`.
+    #[errors(errors::tabs::InvalidItemId, errors::tabs::NoSuchTab)]
+    fn list_items(
+        tab: tab::Id,
+        user: user::Id,
+        start_from: Option<entity::Id>,
+        #[serde(default)] limit: crate::requests::tabs::list_items::Limit,
+        #[serde(default)] resolve_marks: bool,
+    ) -> crate::requests::tabs::list_items::Value;
+    /// Adds an item to a tab.
+    #[flags(write_op)]
+    #[errors(
+        errors::tabs::InvalidKind,
+        errors::tabs::NoSuchTab,
+        errors::tabs::InvalidItemId,
+        errors::tabs::Duplicate
+    )]
+    fn insert(user: user::Id, tab: tab::Id, item: entity::Id) -> True;
+    /// Removes an item from a tab.
+    #[flags(write_op)]
+    #[ok(data(copy))]
+    #[errors(
+        errors::tabs::InvalidItemId,
+        errors::tabs::NoSuchItem,
+        errors::tabs::NoSuchTab
+    )]
+    fn delete(user: user::Id, tab: tab::Id, item: entity::Id) -> True;
 }

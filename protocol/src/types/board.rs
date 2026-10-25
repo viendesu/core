@@ -2,13 +2,13 @@ use crate::types::{entity, game, slug, user};
 
 use std::borrow::Cow;
 
+use eva::schemars::{self, JsonSchema};
 use eva::{
     data, str,
     str::{HasPattern, format_compact},
     time::Timestamp,
     zst_error,
 };
-use eva::schemars::{self, JsonSchema};
 use serde::{Serialize, de};
 
 #[data(copy)]

@@ -13,7 +13,11 @@ pub struct AlreadyTaken {
     pub slug: game::Slug,
 }
 
-#[data(error, copy, display("the {game} is listed twice or relates to itself"))]
+#[data(
+    error,
+    copy,
+    display("the {game} is listed twice or relates to itself")
+)]
 pub struct BadRelation {
     pub game: game::Id,
 }

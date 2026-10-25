@@ -1,37 +1,25 @@
+pub use Badges::{add, list};
+
+use crate::requests::Response;
 use crate::types::mark;
+use eva::service;
 
-use eva::{data, str};
+use eva::str;
 
-pub mod list {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub query: Option<str::CompactString>,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub badges: Vec<mark::TextEntry<mark::Badge>>,
-    }
-
-    #[data(error, display("_"))]
-    pub enum Err {}
-}
-
-pub mod add {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub badge: str::CompactString,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub id: mark::Badge,
-    }
-
-    #[data(error, display("_"))]
-    pub enum Err {}
+/// Game badges.
+#[service(result = Response)]
+pub trait Badges {
+    /// Lists badges matching the query, all without one.
+    fn list(
+        query: Option<str::CompactString>,
+    ) -> ok! {
+        badges: Vec<mark::TextEntry<mark::Badge>>,
+    };
+    /// Registers a badge.
+    #[flags(write_op)]
+    fn add(
+        badge: str::CompactString,
+    ) -> ok! {
+        id: mark::Badge,
+    };
 }

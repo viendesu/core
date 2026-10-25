@@ -1,17 +1,12 @@
-use eva::data;
+pub use Sys::healthcheck;
 
+use crate::requests::Response;
 use crate::types::True;
+use eva::service;
 
-pub mod healthcheck {
-    use super::*;
-
-    #[data]
-    #[derive(Default)]
-    pub struct Args {}
-
-    #[data(copy)]
-    pub struct Ok(pub True);
-
-    #[data(error, display("_"))]
-    pub enum Err {}
+#[service(result = Response)]
+pub trait Sys {
+    #[args(derive(Default))]
+    #[ok(data(copy))]
+    fn healthcheck() -> True;
 }

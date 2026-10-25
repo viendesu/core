@@ -67,7 +67,10 @@ macro_rules! reply {
 macro_rules! mock {
     ($(
         $segment:ident {$(
-            $accessor:ident : $Trait:ident {$(
+            $accessor:ident : $Trait:ident {
+                trait: $TraitPath:path,
+                client: $Client:path,
+                $(
                 $(#[$flag:ident])*
                 $method:ident = $endpoint:ident {
                     args: $Args:ty,
@@ -79,7 +82,7 @@ macro_rules! mock {
             )*}
         )*}
     )*) => {$($(
-        impl viendesu_core::service::$segment::$Trait for Mock {$(
+        impl $TraitPath for Mock {$(
             fn $method(&mut self) -> impl CallStep<$Args, Output = $Output> {
                 reply!($segment $endpoint)
             }

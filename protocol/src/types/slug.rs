@@ -1,7 +1,7 @@
 use std::{borrow::Cow, num::NonZeroU8, slice, str::FromStr};
 
-use eva::{data, int, str, str::HasPattern};
 use eva::schemars::{self, JsonSchema};
+use eva::{data, int, str, str::HasPattern};
 
 pub type LowerSlug<const MAX: usize> = Slug<MAX, LowerSlugStart, LowerSlugRest>;
 

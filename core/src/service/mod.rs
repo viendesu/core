@@ -1,72 +1,55 @@
-use eva::{auto_impl, trait_set};
-
-use viendesu_protocol::errors::Aux;
-
 pub use eva::handling::CallStep;
-
-viendesu_macros::endpoints!(for_each_endpoint);
-
-/// Generates the [`IsSession`] trait sum and the [`Session`] projection methods.
-macro_rules! domains {
-    ($(
-        $segment:ident {$(
-            $accessor:ident : $Trait:ident {$(
-                $(#[$flag:ident])*
-                $method:ident = $endpoint:ident {
-                    args: $Args:ty,
-                    ok: $Ok:ty,
-                    err: $Err:ty,
-                    output: $Output:ty,
-                    docs: [$($doc:literal),*],
-                }
-            )*}
-        )*}
-    )*) => {
-        trait_set! {
-            pub trait IsSession = Send + Sync + authz::Authentication $($(+ $segment::$Trait)*)*;
-        }
-
-        impl<S: IsSession> Session<S> {
-            pub const fn authz(&mut self) -> impl authz::Authentication {
-                &mut self.0
-            }
-
-            $($(
-                pub const fn $accessor(&mut self) -> impl $segment::$Trait {
-                    &mut self.0
-                }
-            )*)*
-        }
-    };
-}
-
-for_each_endpoint!(domains);
-
-pub mod files;
-
+use eva::{auto_impl, export, trait_set};
+use viendesu_protocol::errors::Aux;
 pub mod authz;
 
-pub type SessionOf<T> = <T as SessionMaker>::Session;
+pub use crate::protocol::requests::articles::Articles;
+pub use crate::protocol::requests::authors::Authors;
+pub use crate::protocol::requests::badges::Badges;
+pub use crate::protocol::requests::blogs::Blogs;
+pub use crate::protocol::requests::boards::Boards;
+pub use crate::protocol::requests::comments::Comments;
+pub use crate::protocol::requests::files::Files;
+pub use crate::protocol::requests::games::Games;
+pub use crate::protocol::requests::genres::Genres;
+pub use crate::protocol::requests::messages::Messages;
+pub use crate::protocol::requests::tabs::Tabs;
+pub use crate::protocol::requests::tags::Tags;
+pub use crate::protocol::requests::threads::Threads;
+pub use crate::protocol::requests::uploads::Uploads;
+pub use crate::protocol::requests::users::Users;
+#[export]
+#[derive(Debug, Clone, Copy)]
+pub struct Session {
+    users: crate::protocol::requests::users::Users,
+    authors: crate::protocol::requests::authors::Authors,
+    games: crate::protocol::requests::games::Games,
+    boards: crate::protocol::requests::boards::Boards,
+    threads: crate::protocol::requests::threads::Threads,
+    messages: crate::protocol::requests::messages::Messages,
+    blogs: crate::protocol::requests::blogs::Blogs,
+    articles: crate::protocol::requests::articles::Articles,
+    comments: crate::protocol::requests::comments::Comments,
+    tags: crate::protocol::requests::tags::Tags,
+    genres: crate::protocol::requests::genres::Genres,
+    badges: crate::protocol::requests::badges::Badges,
+    tabs: crate::protocol::requests::tabs::Tabs,
+    uploads: crate::protocol::requests::uploads::Uploads,
+}
 
 trait_set! {
+    pub trait IsSession = SessionFeatures + authz::Authentication;
     pub trait AuxFut<O> = Future<Output = Result<O, Aux>> + Send;
-
     pub trait IsService = SessionMaker;
 }
-
-#[derive(Debug, Clone, Copy)]
-#[repr(transparent)]
-pub struct Session<S>(S);
-
+pub type SessionOf<T> = <T as SessionMaker>::Session;
 impl<S: IsSession> Session<S> {
-    pub const fn new(session: S) -> Self {
-        Self(session)
+    pub fn authz(&mut self) -> impl authz::Authentication {
+        &mut self.0
     }
 }
-
 #[auto_impl(&, &mut, Arc)]
 pub trait SessionMaker: Send + Sync {
     type Session: IsSession;
-
     fn make_session(&self) -> impl AuxFut<Session<Self::Session>>;
 }

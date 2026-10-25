@@ -1,3 +1,4 @@
+use crate::requests::Response;
 use std::collections::HashMap;
 
 use crate::{
@@ -5,40 +6,13 @@ use crate::{
     types::{Patch, True, article, author, comment, file, game, mark, user},
 };
 
-use eva::{array, data, int, str, time};
+pub use Games::{create, get, rate};
 
-pub mod rate {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub id: game::Id,
-        /// `None` retracts the caller's vote.
-        pub rating: Option<game::RatingValue>,
-    }
-
-    #[data]
-    pub struct Ok {
-        /// Rating of the game after the vote.
-        pub rating: game::MeanRating,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::games::NotFound),
-    }
-}
+use eva::{array, data, int, service, str, time};
 
 pub mod update {
+    pub use super::Games::update::*;
     use super::*;
-
-    #[data]
-    pub struct Args {
-        pub id: game::Id,
-        pub update: Update,
-    }
-
     #[serde_with::apply(Patch => #[serde(default)])]
     #[data]
     pub struct Update {
@@ -58,40 +32,12 @@ pub mod update {
         /// from the caller are kept.
         pub related: Patch<game::Related>,
     }
-
-    #[data]
-    pub struct Ok(pub True);
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::games::NotFound),
-        #[display("{_0}")]
-        AlreadyTaken(#[from] errors::games::AlreadyTaken),
-        #[display("{_0}")]
-        NoSuchTag(#[from] errors::tags::NoSuchTag),
-        #[display("{_0}")]
-        NoSuchBadge(#[from] errors::badges::NoSuchBadge),
-        #[display("{_0}")]
-        NoSuchGenre(#[from] errors::genres::NoSuchGenre),
-        #[display("{_0}")]
-        UnexpectedFileClass(#[from] errors::files::UnexpectedFileClass),
-        #[display("{_0}")]
-        InvalidImage(#[from] errors::files::InvalidImage),
-        #[display("{_0}")]
-        FileNotFound(#[from] errors::files::NotFound),
-        #[display("{_0}")]
-        BadRelation(#[from] errors::games::BadRelation),
-        #[display("{_0}")]
-        TooManyRelations(#[from] errors::games::TooManyRelations),
-    }
 }
 
 pub mod search {
+    pub use super::Games::search::*;
     use super::*;
-
     type Arr<T> = array::ImmutableHeap<T, 16>;
-
     #[data]
     #[derive(Default)]
     pub struct Marks {
@@ -117,9 +63,7 @@ pub mod search {
         #[serde(default)]
         pub platforms_any: game::Platforms,
     }
-
     type SortKey<K> = (K, game::Id);
-
     #[data(copy, display(name))]
     pub enum SortBy {
         /// By game id. Simplest possible ordering.
@@ -135,13 +79,11 @@ pub mod search {
             after: Option<SortKey<game::RatingValue>>,
         },
     }
-
     impl Default for SortBy {
         fn default() -> Self {
             Self::Id { after: None }
         }
     }
-
     #[data(copy, display(name))]
     #[derive(Default)]
     pub enum Order {
@@ -151,153 +93,114 @@ pub mod search {
         #[default]
         Desc,
     }
-
     #[int(u8, 1..=32)]
     pub enum Limit {}
-
     impl Default for Limit {
         fn default() -> Self {
             Self::POS16
         }
     }
+}
 
-    #[data]
-    pub struct Args {
-        pub query: Option<game::SearchQuery>,
-        pub author: Option<author::Selector>,
-        #[serde(default)]
-        pub include: Marks,
-        #[serde(default)]
-        pub exclude: Marks,
-        #[serde(default)]
-        pub order: Order,
-        #[serde(default)]
-        pub sort_by: SortBy,
-        pub limit: Option<Limit>,
-        #[serde(default)]
-        pub resolve_marks: bool,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub found: Vec<game::Game>,
+/// The game catalog.
+#[service(result = Response)]
+pub trait Games {
+    /// Sets the caller's rating, replacing the previous one.
+    #[flags(write_op)]
+    #[errors(errors::games::NotFound)]
+    fn rate(
+        id: game::Id,
+        /// `None` retracts the caller's vote.
+        rating: Option<game::RatingValue>,
+    ) -> ok! {
+        /// Rating of the game after the vote.
+        rating: game::MeanRating,
+    };
+    /// Patches a game.
+    #[flags(write_op)]
+    #[errors(errors::games::NotFound, errors::games::AlreadyTaken, errors::tags::NoSuchTag, errors::badges::NoSuchBadge, errors::genres::NoSuchGenre, errors::files::UnexpectedFileClass, errors::files::InvalidImage, errors::files::NotFound as FileNotFound, errors::games::BadRelation, errors::games::TooManyRelations)]
+    fn update(id: game::Id, update: crate::requests::games::update::Update) -> True;
+    /// Searches the catalog; the text query matches titles and alternative titles only.
+    ///
+    /// Paginated via the `after` key of `sort_by`.
+    #[errors(errors::authors::NotFound as NoSuchAuthor)]
+    fn search(
+        query: Option<game::SearchQuery>,
+        author: Option<author::Selector>,
+        #[serde(default)] include: crate::requests::games::search::Marks,
+        #[serde(default)] exclude: crate::requests::games::search::Marks,
+        #[serde(default)] order: crate::requests::games::search::Order,
+        #[serde(default)] sort_by: crate::requests::games::search::SortBy,
+        limit: Option<crate::requests::games::search::Limit>,
+        #[serde(default)] resolve_marks: bool,
+    ) -> ok! {
+        found: Vec<game::Game>,
         /// Tag and badge names of the found games; empty unless requested
         /// via `resolve_marks`.
         #[serde(default)]
-        pub marks: game::Marks,
-        pub authors: HashMap<author::Id, author::Mini>,
-        pub users: HashMap<user::Id, user::Mini>,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NoSuchAuthor(#[from] errors::authors::NotFound),
-    }
-}
-
-pub mod create {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub title: game::Title,
-        #[serde(default)]
-        pub alt_titles: game::AltTitles,
-        pub description: Option<game::Description>,
-        pub thumbnail: Option<file::Id>,
-        pub author: author::Id,
-        #[serde(default)]
-        pub tags: mark::Tags,
-        #[serde(default)]
-        pub screenshots: game::Screenshots,
-        #[serde(default)]
-        pub genres: mark::Genres,
-        #[serde(default)]
-        pub releases: game::Releases,
-        pub slug: Option<game::Slug>,
-        pub vndb: Option<game::VndbId>,
-        pub release_date: Option<game::ReleaseDate>,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub id: game::Id,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NoSuchAuthor(#[from] errors::authors::NotFound),
-        #[display("{_0}")]
-        AlreadyTaken(#[from] errors::games::AlreadyTaken),
-        #[display("{_0}")]
-        NoSuchTag(#[from] errors::tags::NoSuchTag),
-        #[display("{_0}")]
-        NoSuchGenre(#[from] errors::genres::NoSuchGenre),
-        #[display("{_0}")]
-        UnexpectedFileClass(#[from] errors::files::UnexpectedFileClass),
-        #[display("{_0}")]
-        InvalidImage(#[from] errors::files::InvalidImage),
-        #[display("{_0}")]
-        FileNotFound(#[from] errors::files::NotFound),
-    }
-}
-
-pub mod get {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub game: game::Selector,
-        pub resolve_marks: bool,
+        marks: game::Marks,
+        authors: HashMap<author::Id, author::Mini>,
+        users: HashMap<user::Id, user::Mini>,
+    };
+    /// Adds a game.
+    ///
+    /// `author` must be owned by the caller unless it has a moderation role.
+    #[flags(write_op)]
+    #[errors(errors::authors::NotFound as NoSuchAuthor, errors::games::AlreadyTaken, errors::tags::NoSuchTag, errors::genres::NoSuchGenre, errors::files::UnexpectedFileClass, errors::files::InvalidImage, errors::files::NotFound as FileNotFound)]
+    fn create(
+        title: game::Title,
+        #[serde(default)] alt_titles: game::AltTitles,
+        description: Option<game::Description>,
+        thumbnail: Option<file::Id>,
+        author: author::Id,
+        #[serde(default)] tags: mark::Tags,
+        #[serde(default)] screenshots: game::Screenshots,
+        #[serde(default)] genres: mark::Genres,
+        #[serde(default)] releases: game::Releases,
+        slug: Option<game::Slug>,
+        vndb: Option<game::VndbId>,
+        release_date: Option<game::ReleaseDate>,
+    ) -> ok! {
+        id: game::Id,
+    };
+    /// Gets a game.
+    #[errors(errors::games::NotFound, errors::authors::NotFound as NoSuchAuthor)]
+    fn get(
+        game: game::Selector,
+        resolve_marks: bool,
         /// Also fetch the few latest articles of the game's blog.
         #[serde(default)]
-        pub latest_articles: bool,
+        latest_articles: bool,
         /// Also fetch the first page of the game's top-level comments.
         #[serde(default)]
-        pub comments: bool,
+        comments: bool,
         /// Also fetch the related games.
         #[serde(default)]
-        pub related: bool,
-    }
-
-    #[data]
-    pub struct Ok {
-        // TODO: include if requested
-        // - translation maps.
-        // - releases
-        pub game: game::Game,
+        related: bool,
+    ) -> ok! {
+        game: game::Game,
         /// The caller's own rating of the game, if any.
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        pub own_rating: Option<game::RatingValue>,
-        pub marks: game::Marks,
-        pub authors: HashMap<author::Id, author::Mini>,
-        pub users: HashMap<user::Id, user::Mini>,
+        own_rating: Option<game::RatingValue>,
+        marks: game::Marks,
+        authors: HashMap<author::Id, author::Mini>,
+        users: HashMap<user::Id, user::Mini>,
         /// Latest articles of the game's blog, newest first.
         /// Empty unless requested via `latest_articles`.
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
-        pub latest_articles: Vec<article::Mini>,
+        latest_articles: Vec<article::Mini>,
         /// First page of the game's top-level comments, most liked first;
         /// continue via `comments::list` with `before` + `before_likes`.
         /// Their authors are merged into `users`. Empty unless requested
         /// via `comments`.
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
-        pub comments: Vec<comment::Comment>,
+        comments: Vec<comment::Comment>,
         /// Relations to the games visible to the caller; their authors are
         /// merged into `authors`. Empty unless requested via `related`.
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
-        pub related: Vec<game::Relation>,
+        related: Vec<game::Relation>,
         /// Miniatures of the games in `related`.
         #[serde(default, skip_serializing_if = "HashMap::is_empty")]
-        pub games: HashMap<game::Id, game::Mini>,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::games::NotFound),
-        #[display("{_0}")]
-        NoSuchAuthor(#[from] errors::authors::NotFound),
-    }
+        games: HashMap<game::Id, game::Mini>,
+    };
 }

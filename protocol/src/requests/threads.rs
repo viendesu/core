@@ -1,4 +1,7 @@
-use eva::{data, int, str};
+use crate::requests::Response;
+pub use Threads::{create, delete, edit, get};
+
+use eva::{int, service, str};
 
 use crate::{
     errors,
@@ -6,111 +9,50 @@ use crate::{
 };
 
 pub mod search {
+    pub use super::Threads::search::*;
     use super::*;
-
     #[int(u8, 1..=64)]
     pub enum Limit {}
-
     impl Default for Limit {
         fn default() -> Self {
             Self::POS24
         }
     }
-
-    #[data]
-    pub struct Args {
-        #[serde(default)]
-        pub limit: Limit,
-        // TODO(MKS-6): implement better pagination.
-        pub after: Option<thread::Id>,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub results: Vec<thread::Thread>,
-    }
-
-    #[data(error, display("_"))]
-    pub enum Err {}
 }
 
-pub mod delete {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub thread: thread::Id,
-    }
-
-    #[data]
-    pub struct Ok(pub True);
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::threads::NotFound),
-    }
-}
-
-pub mod edit {
-    use super::*;
-
-    #[serde_with::apply(Patch => #[serde(default)])]
-    #[data]
-    pub struct Args {
-        pub thread: thread::Id,
-        pub text: Patch<message::Text>,
-    }
-
-    #[data]
-    pub struct Ok(pub True);
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::threads::NotFound),
-        #[display("{_0}")]
-        NotAnOwner(#[from] errors::threads::NotAnOwner),
-    }
-}
-
-pub mod get {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub thread: thread::Selector,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub thread: thread::Thread,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::threads::NotFound),
-    }
-}
-
-pub mod create {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub board: board::Selector,
-        pub initial_message: message::Text,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub id: thread::Id,
-    }
-
-    #[data]
-    pub enum Err {
-        #[display("{_0}")]
-        NoSuchBoard(#[from] errors::boards::NotFound),
-    }
+/// Forum threads.
+#[service(result = Response)]
+pub trait Threads {
+    /// Lists threads, paginated via `after`.
+    fn search(
+        #[serde(default)] limit: crate::requests::threads::search::Limit,
+        after: Option<thread::Id>,
+    ) -> ok! {
+        results: Vec<thread::Thread>,
+    };
+    /// Deletes a thread.
+    #[flags(write_op)]
+    #[errors(errors::threads::NotFound)]
+    fn delete(thread: thread::Id) -> True;
+    /// Patches a thread; owner only.
+    #[flags(write_op)]
+    #[args(serde_with::apply(Patch => #[serde(default)]))]
+    #[errors(errors::threads::NotFound, errors::threads::NotAnOwner)]
+    fn edit(thread: thread::Id, text: Patch<message::Text>) -> True;
+    /// Gets a thread.
+    #[errors(errors::threads::NotFound)]
+    fn get(
+        thread: thread::Selector,
+    ) -> ok! {
+        thread: thread::Thread,
+    };
+    /// Opens a thread on a board with its initial message.
+    #[flags(write_op)]
+    #[errors(errors::boards::NotFound as NoSuchBoard)]
+    fn create(
+        board: board::Selector,
+        initial_message: message::Text,
+    ) -> ok! {
+        id: thread::Id,
+    };
 }

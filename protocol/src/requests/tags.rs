@@ -1,56 +1,35 @@
+use crate::requests::Response;
 use crate::types::mark;
 
-use eva::{array, data, str};
+pub use Tags::{add, list};
+
+use eva::{array, service, str};
 
 pub mod get_many {
-    use super::*;
-
+    pub use super::Tags::get_many::*;
     pub const MAX: usize = 16;
-
-    #[data]
-    pub struct Args {
-        pub ids: array::ImmutableHeap<mark::Tag, MAX>,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub tags: Vec<mark::TextEntry<mark::Tag>>,
-    }
-
-    #[data(error, display("_"))]
-    pub enum Err {}
 }
 
-pub mod list {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub query: Option<str::CompactString>,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub tags: Vec<mark::TextEntry<mark::Tag>>,
-    }
-
-    #[data(error, display("_"))]
-    pub enum Err {}
-}
-
-pub mod add {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub tag: str::CompactString,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub id: mark::Tag,
-    }
-
-    #[data(error, display("_"))]
-    pub enum Err {}
+/// Game tags.
+#[service(result = Response)]
+pub trait Tags {
+    /// Gets tags by id, at most 16; unknown ids are skipped.
+    fn get_many(
+        ids: array::ImmutableHeap<mark::Tag, { crate::requests::tags::get_many::MAX }>,
+    ) -> ok! {
+        tags: Vec<mark::TextEntry<mark::Tag>>,
+    };
+    /// Lists tags matching the query, all without one.
+    fn list(
+        query: Option<str::CompactString>,
+    ) -> ok! {
+        tags: Vec<mark::TextEntry<mark::Tag>>,
+    };
+    /// Registers a tag.
+    #[flags(write_op)]
+    fn add(
+        tag: str::CompactString,
+    ) -> ok! {
+        id: mark::Tag,
+    };
 }

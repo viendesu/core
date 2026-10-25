@@ -1,84 +1,37 @@
-use eva::data;
+pub use Messages::{delete, edit, get, post};
 
+use crate::requests::Response;
 use crate::{
     errors,
     types::{True, message, thread},
 };
+use eva::service;
 
-pub mod edit {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub message: message::Id,
-        pub text: message::Text,
-    }
-
-    #[data]
-    pub struct Ok;
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::messages::NotFound),
-    }
-}
-
-pub mod delete {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub message: message::Id,
-    }
-
-    #[data]
-    pub struct Ok(pub True);
-
-    #[data]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::messages::NotFound),
-    }
-}
-
-pub mod post {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub thread: thread::Selector,
-        pub text: message::Text,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub id: message::Id,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NoSuchThread(#[from] errors::threads::NotFound),
-    }
-}
-
-pub mod get {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub message: message::Selector,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub message: message::Message,
-    }
-
-    #[data]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::messages::NotFound),
-    }
+/// Forum thread messages.
+#[service(result = Response)]
+pub trait Messages {
+    /// Replaces a message's text; owner only.
+    #[flags(write_op)]
+    #[errors(errors::messages::NotFound)]
+    fn edit(message: message::Id, text: message::Text) -> ();
+    /// Deletes a message.
+    #[flags(write_op)]
+    #[errors(errors::messages::NotFound)]
+    fn delete(message: message::Id) -> True;
+    /// Posts a message to a thread.
+    #[flags(write_op)]
+    #[errors(errors::threads::NotFound as NoSuchThread)]
+    fn post(
+        thread: thread::Selector,
+        text: message::Text,
+    ) -> ok! {
+        id: message::Id,
+    };
+    /// Gets a message.
+    #[errors(errors::messages::NotFound)]
+    fn get(
+        message: message::Selector,
+    ) -> ok! {
+        message: message::Message,
+    };
 }

@@ -104,7 +104,7 @@ macro_rules! endpoint {
     ([$skip:ident $($flag:ident)*] $($rest:tt)*) => {
         endpoint!([$($flag)*] $($rest)*);
     };
-    ([] $segment:ident $accessor:ident $Trait:ident $method:ident $endpoint:ident $Args:ty, $Ok:ty, $Err:ty) => {
+    ([] $segment:ident $accessor:ident [$TraitPath:path] $method:ident $endpoint:ident $Args:ty, $Ok:ty, $Err:ty) => {
         impl<S: IsSession> Endpoint<S> for $Args {
             const METHOD: &'static str = concat!(stringify!($segment), ".", stringify!($endpoint));
 
@@ -115,9 +115,10 @@ macro_rules! endpoint {
                 session: &mut Session<S>,
                 args: Self,
             ) -> impl Future<Output = Response<Self::Ok, Self::Err>> + Send {
-                use viendesu_core::service::{CallStep as _, $segment::$Trait as _};
+                use viendesu_core::service::CallStep as _;
+use $TraitPath as _;
 
-                async move { session.$accessor().$method().call(args).await }
+                async move { session.$accessor().inner_mut().$method().call(args).await }
             }
         }
     };
@@ -139,7 +140,10 @@ macro_rules! register {
 macro_rules! endpoints {
     ($(
         $segment:ident {$(
-            $accessor:ident : $Trait:ident {$(
+            $accessor:ident : $Trait:ident {
+                trait: $TraitPath:path,
+                client: $Client:path,
+                $(
                 $(#[$flag:ident])*
                 $method:ident = $endpoint:ident {
                     args: $Args:ty,
@@ -152,7 +156,7 @@ macro_rules! endpoints {
         )*}
     )*) => {
         $($($(
-            endpoint!([$($flag)*] $segment $accessor $Trait $method $endpoint $Args, $Ok, $Err);
+            endpoint!([$($flag)*] $segment $accessor [$TraitPath] $method $endpoint $Args, $Ok, $Err);
         )*)*)*
 
         /// Every serde endpoint of the service, keyed by `<segment>.<endpoint>`.

@@ -1,58 +1,35 @@
-use eva::data;
+pub use Blogs::{edit, get};
 
+use crate::requests::Response;
 use crate::{
     errors,
     types::{Patch, True, blog},
 };
-
-pub mod get {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub blog: blog::Selector,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub blog: blog::Blog,
-        pub owner: blog::Owner,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::blogs::NotFound),
-        #[display("{_0}")]
-        NoSuchUser(#[from] errors::users::NotFound),
-        #[display("{_0}")]
-        NoSuchAuthor(#[from] errors::authors::NotFound),
-        #[display("{_0}")]
-        NoSuchGame(#[from] errors::games::NotFound),
-    }
-}
+use eva::service;
 
 // `edit` with every field patched to `None` deletes the blog metadata
 // entirely: a blog with empty metadata is not stored.
-pub mod edit {
-    use super::*;
 
-    #[serde_with::apply(Patch => #[serde(default)])]
-    #[data]
-    pub struct Args {
-        pub blog: blog::Id,
-        pub title: Patch<Option<blog::Title>>,
-        pub description: Patch<Option<blog::Description>>,
-    }
-
-    #[data]
-    pub struct Ok(pub True);
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::blogs::NotFound),
-        #[display("{_0}")]
-        NotAnOwner(#[from] errors::blogs::NotAnOwner),
-    }
+/// Blogs: a facet of a user, author or game, keyed by its id.
+#[service(result = Response)]
+pub trait Blogs {
+    /// Gets a blog with its resolved owner.
+    #[errors(errors::blogs::NotFound, errors::users::NotFound as NoSuchUser, errors::authors::NotFound as NoSuchAuthor, errors::games::NotFound as NoSuchGame)]
+    fn get(
+        blog: blog::Selector,
+    ) -> ok! {
+        blog: blog::Blog,
+        owner: blog::Owner,
+    };
+    /// Patches blog metadata; owner only.
+    ///
+    /// Patching every field to `None` deletes the metadata.
+    #[flags(write_op)]
+    #[args(serde_with::apply(Patch => #[serde(default)]))]
+    #[errors(errors::blogs::NotFound, errors::blogs::NotAnOwner)]
+    fn edit(
+        blog: blog::Id,
+        title: Patch<Option<blog::Title>>,
+        description: Patch<Option<blog::Description>>,
+    ) -> True;
 }

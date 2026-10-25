@@ -1,23 +1,11 @@
-use eva::data;
+pub use Files::get_info;
 
+use crate::requests::Response;
 use crate::{errors, types::file};
+use eva::service;
 
-pub mod get_info {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub id: file::Id,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub info: file::FileInfo,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::files::NotFound),
-    }
+#[service(result = Response)]
+pub trait Files {
+    #[errors(errors::files::NotFound)]
+    fn get_info(id: file::Id) -> file::FileInfo;
 }

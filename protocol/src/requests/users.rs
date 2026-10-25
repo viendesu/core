@@ -1,7 +1,10 @@
+use crate::requests::Response;
 ///! # Users functionality
 ///!
 ///! Subject of actions.
-use eva::{data, int, str::CompactString, time::Timestamp};
+pub use Users::{begin_auth, check_auth, confirm_sign_up, finish_auth, get, sign_in, sign_up};
+
+use eva::{data, int, service, str::CompactString, time::Timestamp};
 
 use crate::{
     errors::users as errors,
@@ -9,100 +12,21 @@ use crate::{
 };
 
 pub mod search {
+    pub use super::Users::search::*;
     use super::*;
-
     #[int(u8, 1..=64)]
     pub enum Limit {}
-
     impl Default for Limit {
         fn default() -> Self {
             Self::POS24
         }
     }
-
-    #[data]
-    pub struct Args {
-        pub query: Option<CompactString>,
-        #[serde(default)]
-        pub limit: Limit,
-        pub start_from: Option<user::Id>,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub found: Vec<user::User>,
-    }
-
-    #[data(error, display("_"))]
-    pub enum Err {}
-}
-
-pub mod begin_auth {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub method: user::AuthoredAuth,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub auth_session: user::AuthSessionId,
-    }
-
-    #[data(error, display("_"))]
-    pub enum Err {}
-}
-
-pub mod finish_auth {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub auth_session: user::AuthSessionId,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub session: session::Token,
-        pub method: user::AuthoredAuth,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NoSuchAuthSession(#[from] errors::NoSuchAuthSession),
-    }
-}
-
-pub mod check_auth {
-    use super::*;
-
-    #[data]
-    pub struct Args {}
-
-    #[data(copy)]
-    pub struct Ok {
-        pub user: user::Id,
-        pub role: user::Role,
-    }
-
-    #[data(error, display(""))]
-    pub enum Err {}
 }
 
 pub mod update {
+    pub use super::Users::update::*;
     use super::*;
-
-    #[data]
-    pub struct Args {
-        pub user: Option<user::Selector>,
-        pub update: Update,
-    }
-
-    #[serde_with::apply(
-        Patch => #[serde(default)]
-    )]
+    #[serde_with::apply(Patch => #[serde(default)])]
     #[data]
     #[derive(Default)]
     pub struct Update {
@@ -114,111 +38,81 @@ pub mod update {
         pub pfp: Patch<Option<file::Id>>,
         pub email: Patch<user::Email>,
     }
-
-    #[data]
-    pub struct Ok(pub True);
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::NotFound),
-        #[display("{_0}")]
-        FileNotFound(#[from] crate::errors::files::NotFound),
-        #[display("{_0}")]
-        UnexpectedFileClass(#[from] crate::errors::files::UnexpectedFileClass),
-        #[display("{_0}")]
-        AlreadyTaken(#[from] errors::AlreadyTaken),
-    }
 }
 
-pub mod get {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub user: Option<user::Selector>,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub user: user::User,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::NotFound),
-    }
-}
-
-pub mod confirm_sign_up {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub user: user::Id,
-        pub token: user::SignUpCompletionToken,
-    }
-
-    #[data]
-    pub struct Ok(pub True);
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        InvalidSignUpToken(#[from] errors::InvalidSignUpToken),
-        #[display("{_0}")]
-        NotFoundOrCompleted(#[from] errors::NotFoundOrCompleted),
-    }
-}
-
-pub mod sign_in {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub nickname: user::Nickname,
-        pub password: user::Password,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub token: session::Token,
-        pub expires_at: Timestamp,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        NotFound(#[from] errors::NotFound),
-        #[display("{_0}")]
-        InvalidPassword(#[from] errors::InvalidPassword),
-        #[display("{_0}")]
-        MustCompleteSignUp(#[from] errors::MustCompleteSignUp),
-    }
-}
-
-pub mod sign_up {
-    use super::*;
-
-    #[data]
-    pub struct Args {
-        pub nickname: user::Nickname,
-        pub email: user::Email,
-        pub display_name: Option<user::DisplayName>,
-        pub password: user::Password,
-    }
-
-    #[data]
-    pub struct Ok {
-        pub id: user::Id,
-    }
-
-    #[data(error)]
-    pub enum Err {
-        #[display("{_0}")]
-        AlreadyTaken(#[from] errors::AlreadyTaken),
-        #[display("{_0}")]
-        SignUpDisabled(#[from] errors::SignUpDisabled),
-    }
+/// Accounts, sessions and profiles.
+#[service(result = Response)]
+pub trait Users {
+    /// Searches users by text query, paginated via `start_from`.
+    fn search(
+        query: Option<CompactString>,
+        #[serde(default)] limit: crate::requests::users::search::Limit,
+        start_from: Option<user::Id>,
+    ) -> ok! {
+        found: Vec<user::User>,
+    };
+    /// Begins an auth session for an authored method, e.g. a Telegram bot.
+    ///
+    /// The returned id is a secret capability: only the caller may redeem
+    /// it via `finish_auth`, and only before it expires.
+    #[flags(write_op)]
+    fn begin_auth(
+        method: user::AuthoredAuth,
+    ) -> ok! {
+        auth_session: user::AuthSessionId,
+    };
+    /// Redeems an auth session begun by the caller for a session token.
+    #[flags(write_op)]
+    #[errors(errors::NoSuchAuthSession)]
+    fn finish_auth(
+        auth_session: user::AuthSessionId,
+    ) -> ok! {
+        session: session::Token,
+        method: user::AuthoredAuth,
+    };
+    /// Id and role of the caller.
+    #[ok(data(copy))]
+    fn check_auth() -> ok! {
+        user: user::Id,
+        role: user::Role,
+    };
+    /// Patches a user; `None` selects the caller.
+    ///
+    /// Updating others requires a moderation role.
+    #[flags(write_op)]
+    #[errors(errors::NotFound, crate::errors::files::NotFound as FileNotFound, crate::errors::files::UnexpectedFileClass, errors::AlreadyTaken)]
+    fn update(user: Option<user::Selector>, update: crate::requests::users::update::Update)
+    -> True;
+    /// Gets a user; `None` selects the caller.
+    #[errors(errors::NotFound)]
+    fn get(
+        user: Option<user::Selector>,
+    ) -> ok! {
+        user: user::User,
+    };
+    /// Completes a pending sign-up with its completion token.
+    #[flags(write_op)]
+    #[errors(errors::InvalidSignUpToken, errors::NotFoundOrCompleted)]
+    fn confirm_sign_up(user: user::Id, token: user::SignUpCompletionToken) -> True;
+    /// Exchanges nickname and password for a session token.
+    #[flags(write_op)]
+    #[errors(errors::NotFound, errors::InvalidPassword, errors::MustCompleteSignUp)]
+    fn sign_in(
+        nickname: user::Nickname,
+        password: user::Password,
+    ) -> ok! {
+        token: session::Token,
+        expires_at: Timestamp,
+    };
+    /// Registers a user; signing in requires `confirm_sign_up` first.
+    #[flags(write_op)]
+    #[errors(errors::AlreadyTaken, errors::SignUpDisabled)]
+    fn sign_up(
+        nickname: user::Nickname,
+        email: user::Email,
+        display_name: Option<user::DisplayName>,
+        password: user::Password,
+    ) -> ok! {
+        id: user::Id,
+    };
 }

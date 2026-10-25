@@ -1,20 +1,19 @@
+use crate::requests::Response;
 use crate::types::mark;
+use eva::service;
 
-use eva::{array, data};
+use eva::array;
 
 pub mod list {
-    use super::*;
-
+    pub use super::Genres::list::*;
     pub const MAX: usize = 256;
+}
 
-    #[data]
-    pub struct Args {}
-
-    #[data]
-    pub struct Ok {
-        pub genres: array::ImmutableHeap<mark::Genre, MAX>,
-    }
-
-    #[data(error, display("_"))]
-    pub enum Err {}
+/// Game genres.
+#[service(result = Response)]
+pub trait Genres {
+    /// Lists all genres.
+    fn list() -> ok! {
+        genres: array::ImmutableHeap<mark::Genre, { crate::requests::genres::list::MAX }>,
+    };
 }

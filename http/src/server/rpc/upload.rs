@@ -17,10 +17,8 @@ use axum::{
 use futures::stream;
 use tokio::{sync::mpsc, task::JoinHandle};
 
-use viendesu_core::service::{CallStep as _, uploads::Uploads as _};
 use viendesu_protocol::{
     errors::Aux,
-    requests::uploads::finish,
     types::upload,
     uploads::{AbortReason, Chunk, UploadStream},
 };
@@ -89,11 +87,7 @@ async fn outcome<T: Types>(
 
     let result = session
         .uploads()
-        .finish()
-        .call(finish::Args {
-            id,
-            stream: multipart_stream(request),
-        })
+        .finish(id, multipart_stream(request))
         .await;
 
     call.finish(result)

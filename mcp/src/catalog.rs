@@ -100,7 +100,10 @@ pub fn select<S: IsSession + 'static>(mut keep: impl FnMut(&Endpoint) -> bool) -
     macro_rules! register {
         ($(
             $segment:ident {$(
-                $accessor:ident : $Trait:ident {$(
+                $accessor:ident : $Trait:ident {
+                    trait: $TraitPath:path,
+                    client: $Client:path,
+                    $(
                     $(#[$flag:ident])*
                     $method:ident = $endpoint:ident {
                         args: $Args:ty,
@@ -113,7 +116,7 @@ pub fn select<S: IsSession + 'static>(mut keep: impl FnMut(&Endpoint) -> bool) -
             )*}
         )*) => {$($($(
             unless_stream!([$($flag)*] {
-                use viendesu_core::service::$segment::$Trait as _;
+                use $TraitPath as _;
 
                 let name = concat!(stringify!($accessor), "_", stringify!($method));
                 let endpoint = Endpoint {
@@ -126,7 +129,7 @@ pub fn select<S: IsSession + 'static>(mut keep: impl FnMut(&Endpoint) -> bool) -
                         name,
                         describe(&[$($doc),*], llm_context!($accessor $method)),
                         |mut s: Session<S>, args: $Args| async move {
-                            s.$accessor().$method().call(args).await
+                            s.$accessor().inner_mut().$method().call(args).await
                         },
                     );
                 }

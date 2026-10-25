@@ -275,7 +275,10 @@ async fn every_serde_endpoint_is_routed() {
     macro_rules! methods {
         ($(
             $segment:ident {$(
-                $accessor:ident : $Trait:ident {$(
+                $accessor:ident : $Trait:ident {
+                    trait: $TraitPath:path,
+                    client: $Client:path,
+                    $(
                     $(#[$flag:ident])*
                     $method:ident = $endpoint:ident {
                         args: $Args:ty,

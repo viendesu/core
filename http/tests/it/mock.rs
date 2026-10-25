@@ -154,7 +154,10 @@ macro_rules! mock_method {
 macro_rules! mock_domains {
     ($(
         $segment:ident {$(
-            $accessor:ident : $Trait:ident {$(
+            $accessor:ident : $Trait:ident {
+                trait: $TraitPath:path,
+                client: $Client:path,
+                $(
                 $(#[$flag:ident])*
                 $method:ident = $endpoint:ident {
                     args: $Args:ty,
@@ -167,7 +170,7 @@ macro_rules! mock_domains {
         )*}
     )*) => {
         $($(
-            impl viendesu_core::service::$segment::$Trait for Mock {
+            impl $TraitPath for Mock {
                 $( mock_method!([$($flag)*] $segment $method $endpoint $Args, $Output); )*
             }
         )*)*
