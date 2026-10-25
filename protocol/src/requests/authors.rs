@@ -14,7 +14,7 @@ pub trait Authors {
     /// Searches authors by text query, optionally owned by a user.
     ///
     /// Paginated via `start_from`.
-    #[errors(errors::users::NotFound as NoSuchUser)]
+    #[errors(NoSuchUser(errors::users::NotFound))]
     fn search(
         query: CompactString,
         owned_by: Option<user::Selector>,
@@ -40,8 +40,8 @@ pub trait Authors {
     #[errors(
         errors::authors::NotFound,
         errors::authors::AlreadyExists,
-        errors::files::NotFound as FileNotFound,
-        errors::files::UnexpectedFileClass,
+        FileNotFound(errors::files::NotFound),
+        errors::files::UnexpectedFileClass
     )]
     fn update(
         /// Who to update.
@@ -75,9 +75,9 @@ pub trait Authors {
     #[errors(
         errors::authors::NotFound,
         errors::authors::AlreadyExists,
-        errors::users::NotFound as NoSuchUser,
-        errors::files::NotFound as FileNotFound,
-        errors::files::UnexpectedFileClass,
+        NoSuchUser(errors::users::NotFound),
+        FileNotFound(errors::files::NotFound),
+        errors::files::UnexpectedFileClass
     )]
     fn create(
         title: author::Title,

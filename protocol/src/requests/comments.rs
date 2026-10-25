@@ -14,7 +14,7 @@ pub trait Comments {
     /// Lists top-level comments of a game.
     ///
     /// Paginated via `before`, plus `before_likes` for `Sort::Top`.
-    #[errors(errors::games::NotFound as NoSuchGame)]
+    #[errors(NoSuchGame(errors::games::NotFound))]
     fn list(
         game: game::Id,
         #[serde(default)] sort: comment::Sort,
@@ -49,9 +49,9 @@ pub trait Comments {
     /// Comments on a game, or replies to a top-level comment via `parent`.
     #[flags(write_op)]
     #[errors(
-        errors::games::NotFound as NoSuchGame,
-        errors::comments::NotFound as NoSuchParent,
-        errors::comments::InvalidParent,
+        NoSuchGame(errors::games::NotFound),
+        NoSuchParent(errors::comments::NotFound),
+        errors::comments::InvalidParent
     )]
     fn create(
         game: game::Id,

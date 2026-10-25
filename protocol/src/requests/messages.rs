@@ -21,7 +21,7 @@ pub trait Messages {
 
     /// Posts a message to a thread.
     #[flags(write_op)]
-    #[errors(errors::threads::NotFound as NoSuchThread)]
+    #[errors(NoSuchThread(errors::threads::NotFound))]
     fn post(
         thread: thread::Selector,
         text: message::Text,

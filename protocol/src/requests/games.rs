@@ -33,9 +33,9 @@ pub trait Games {
         errors::genres::NoSuchGenre,
         errors::files::UnexpectedFileClass,
         errors::files::InvalidImage,
-        errors::files::NotFound as FileNotFound,
+        FileNotFound(errors::files::NotFound),
         errors::games::BadRelation,
-        errors::games::TooManyRelations,
+        errors::games::TooManyRelations
     )]
     fn update(id: game::Id, update: this![Update]) -> ok!(True);
     embed! {
@@ -63,7 +63,7 @@ pub trait Games {
     /// Searches the catalog; the text query matches titles and alternative titles only.
     ///
     /// Paginated via the `after` key of `sort_by`.
-    #[errors(errors::authors::NotFound as NoSuchAuthor)]
+    #[errors(NoSuchAuthor(errors::authors::NotFound))]
     fn search(
         query: Option<game::SearchQuery>,
         author: Option<author::Selector>,
@@ -160,13 +160,13 @@ pub trait Games {
     /// `author` must be owned by the caller unless it has a moderation role.
     #[flags(write_op)]
     #[errors(
-        errors::authors::NotFound as NoSuchAuthor,
+        NoSuchAuthor(errors::authors::NotFound),
         errors::games::AlreadyTaken,
         errors::tags::NoSuchTag,
         errors::genres::NoSuchGenre,
         errors::files::UnexpectedFileClass,
         errors::files::InvalidImage,
-        errors::files::NotFound as FileNotFound,
+        FileNotFound(errors::files::NotFound)
     )]
     fn create(
         title: game::Title,
@@ -186,7 +186,7 @@ pub trait Games {
     };
 
     /// Gets a game.
-    #[errors(errors::games::NotFound, errors::authors::NotFound as NoSuchAuthor)]
+    #[errors(errors::games::NotFound, NoSuchAuthor(errors::authors::NotFound))]
     fn get(
         game: game::Selector,
         resolve_marks: bool,

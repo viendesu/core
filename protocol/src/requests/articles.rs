@@ -11,7 +11,7 @@ use crate::{
 #[service(export, result = Response)]
 pub trait Articles {
     /// Lists articles of a blog, newest first, paginated via `before`.
-    #[errors(errors::blogs::NotFound as NoSuchBlog)]
+    #[errors(NoSuchBlog(errors::blogs::NotFound))]
     fn search(
         blog: blog::Id,
         #[serde(default)] limit: this![Limit],
@@ -46,7 +46,7 @@ pub trait Articles {
 
     /// Publishes an article; requires owning the blog.
     #[flags(write_op)]
-    #[errors(errors::blogs::NotFound as NoSuchBlog, errors::blogs::NotAnOwner)]
+    #[errors(NoSuchBlog(errors::blogs::NotFound), errors::blogs::NotAnOwner)]
     fn create(
         blog: blog::Id,
         title: article::Title,

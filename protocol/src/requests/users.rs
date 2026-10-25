@@ -67,9 +67,9 @@ pub trait Users {
     #[flags(write_op)]
     #[errors(
         errors::users::NotFound,
-        errors::files::NotFound as FileNotFound,
+        FileNotFound(errors::files::NotFound),
         errors::files::UnexpectedFileClass,
-        errors::users::AlreadyTaken,
+        errors::users::AlreadyTaken
     )]
     fn update(user: Option<user::Selector>, update: this![Update]) -> ok!(True);
     embed! {

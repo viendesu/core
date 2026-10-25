@@ -15,9 +15,9 @@ pub trait Blogs {
     /// Gets a blog with its resolved owner.
     #[errors(
         errors::blogs::NotFound,
-        errors::users::NotFound as NoSuchUser,
-        errors::authors::NotFound as NoSuchAuthor,
-        errors::games::NotFound as NoSuchGame,
+        NoSuchUser(errors::users::NotFound),
+        NoSuchAuthor(errors::authors::NotFound),
+        NoSuchGame(errors::games::NotFound)
     )]
     fn get(
         blog: blog::Selector,

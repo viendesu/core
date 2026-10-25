@@ -48,7 +48,7 @@ pub trait Threads {
 
     /// Opens a thread on a board with its initial message.
     #[flags(write_op)]
-    #[errors(errors::boards::NotFound as NoSuchBoard)]
+    #[errors(NoSuchBoard(errors::boards::NotFound))]
     fn create(
         board: board::Selector,
         initial_message: message::Text,
