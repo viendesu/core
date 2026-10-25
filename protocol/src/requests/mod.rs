@@ -2,23 +2,29 @@ use crate::errors::Generic;
 
 pub type Response<O, E> = Result<O, Generic<E>>;
 
-pub mod badges;
-pub mod genres;
-pub mod tabs;
-pub mod tags;
+mod badges;
+mod genres;
+mod tabs;
+mod tags;
 
-pub mod sys;
+mod sys;
 
-pub mod boards;
-pub mod messages;
-pub mod threads;
+mod boards;
+mod messages;
+mod threads;
 
-pub mod articles;
-pub mod blogs;
+mod articles;
+mod blogs;
 
-pub mod authors;
-pub mod comments;
-pub mod files;
-pub mod games;
-pub mod uploads;
-pub mod users;
+mod authors;
+mod comments;
+mod files;
+mod games;
+mod uploads;
+mod users;
+
+pub use self::{
+    articles::Articles, authors::Authors, badges::Badges, blogs::Blogs, boards::Boards,
+    comments::Comments, files::Files, games::Games, genres::Genres, messages::Messages, sys::Sys,
+    tabs::Tabs, tags::Tags, threads::Threads, uploads::Uploads, users::Users,
+};

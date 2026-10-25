@@ -10,7 +10,7 @@ use crate::{
 };
 
 /// File uploads: `start` reserves one, `finish` streams the bytes.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Uploads {
     /// Reserves an upload against the per-class byte quotas.
     #[flags(write_op)]
@@ -79,12 +79,7 @@ pub trait Uploads {
     /// Cancels an unfinished upload.
     #[flags(write_op)]
     #[errors(errors::uploads::NotFound)]
-    fn abort(
-        upload: upload::Id,
-    ) -> ok!(
-        #[data(copy)]
-        True
-    );
+    fn abort(upload: upload::Id) -> True;
 
     /// Lists the caller's unfinished uploads.
     #[error(errors::Impossible)]

@@ -7,17 +7,17 @@ use crate::{
 };
 
 /// Forum thread messages.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Messages {
     /// Replaces a message's text; owner only.
     #[flags(write_op)]
     #[errors(errors::messages::NotFound)]
-    fn edit(message: message::Id, text: message::Text) -> ok!(());
+    fn edit(message: message::Id, text: message::Text) -> ();
 
     /// Deletes a message.
     #[flags(write_op)]
     #[errors(errors::messages::NotFound)]
-    fn delete(message: message::Id) -> ok!(True);
+    fn delete(message: message::Id) -> True;
 
     /// Posts a message to a thread.
     #[flags(write_op)]

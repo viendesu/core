@@ -11,7 +11,7 @@ use crate::{
 };
 
 /// Accounts, sessions and profiles.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Users {
     /// Searches users by text query, paginated via `start_from`.
     fn search(
@@ -71,7 +71,7 @@ pub trait Users {
         errors::files::UnexpectedFileClass,
         errors::users::AlreadyTaken
     )]
-    fn update(user: Option<user::Selector>, update: this![Update]) -> ok!(True);
+    fn update(user: Option<user::Selector>, update: this![Update]) -> True;
     embed! {
         #[serde_with::apply(Patch => #[serde(default)])]
         #[data]
@@ -98,7 +98,7 @@ pub trait Users {
     /// Completes a pending sign-up with its completion token.
     #[flags(write_op)]
     #[errors(errors::users::InvalidSignUpToken, errors::users::NotFoundOrCompleted)]
-    fn confirm_sign_up(user: user::Id, token: user::SignUpCompletionToken) -> ok!(True);
+    fn confirm_sign_up(user: user::Id, token: user::SignUpCompletionToken) -> True;
 
     /// Exchanges nickname and password for a session token.
     #[flags(write_op)]

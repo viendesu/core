@@ -1,6 +1,5 @@
 use crate::requests::Response;
-use eva::int;
-use eva::service;
+use eva::{int, service};
 
 use crate::{
     errors,
@@ -8,7 +7,7 @@ use crate::{
 };
 
 /// Blog articles; content is CommonMark.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Articles {
     /// Lists articles of a blog, newest first, paginated via `before`.
     #[errors(NoSuchBlog(errors::blogs::NotFound))]
@@ -63,10 +62,10 @@ pub trait Articles {
         article: article::Id,
         title: Patch<article::Title>,
         content: Patch<article::Content>,
-    ) -> ok!(True);
+    ) -> True;
 
     /// Deletes an article; owner only.
     #[flags(write_op)]
     #[errors(errors::articles::NotFound, errors::articles::NotAnOwner)]
-    fn delete(article: article::Id) -> ok!(True);
+    fn delete(article: article::Id) -> True;
 }

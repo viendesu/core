@@ -7,7 +7,7 @@ use crate::{
 };
 
 /// Forum threads.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Threads {
     /// Lists threads, paginated via `after`.
     fn search(
@@ -30,13 +30,13 @@ pub trait Threads {
     /// Deletes a thread.
     #[flags(write_op)]
     #[errors(errors::threads::NotFound)]
-    fn delete(thread: thread::Id) -> ok!(True);
+    fn delete(thread: thread::Id) -> True;
 
     /// Patches a thread; owner only.
     #[flags(write_op)]
     #[args(serde_with::apply(Patch => #[serde(default)]))]
     #[errors(errors::threads::NotFound, errors::threads::NotAnOwner)]
-    fn edit(thread: thread::Id, text: Patch<message::Text>) -> ok!(True);
+    fn edit(thread: thread::Id, text: Patch<message::Text>) -> True;
 
     /// Gets a thread.
     #[errors(errors::threads::NotFound)]

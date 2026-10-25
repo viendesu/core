@@ -10,7 +10,7 @@ use crate::{
 // entirely: a blog with empty metadata is not stored.
 
 /// Blogs: a facet of a user, author or game, keyed by its id.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Blogs {
     /// Gets a blog with its resolved owner.
     #[errors(
@@ -36,5 +36,5 @@ pub trait Blogs {
         blog: blog::Id,
         title: Patch<Option<blog::Title>>,
         description: Patch<Option<blog::Description>>,
-    ) -> ok!(True);
+    ) -> True;
 }

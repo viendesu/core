@@ -3,11 +3,8 @@ use eva::service;
 
 use crate::types::True;
 
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Sys {
-    #[args(derive(Default))]
-    fn healthcheck() -> ok!(
-        #[data(copy)]
-        True
-    );
+    #[args(derive(Default), non_exhaustive)]
+    fn healthcheck() -> True;
 }

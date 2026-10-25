@@ -3,8 +3,8 @@ use eva::service;
 
 use crate::{errors, types::file};
 
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Files {
     #[errors(errors::files::NotFound)]
-    fn get_info(id: file::Id) -> ok!(file::FileInfo);
+    fn get_info(id: file::Id) -> file::FileInfo;
 }

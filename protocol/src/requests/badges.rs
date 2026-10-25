@@ -1,11 +1,10 @@
 use crate::requests::Response;
-use eva::service;
-use eva::str;
+use eva::{service, str};
 
 use crate::types::mark;
 
 /// Game badges.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Badges {
     /// Lists badges matching the query, all without one.
     fn list(

@@ -9,7 +9,7 @@ use crate::{
 };
 
 /// Game comments, threaded one level deep.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Comments {
     /// Lists top-level comments of a game.
     ///
@@ -66,7 +66,7 @@ pub trait Comments {
     /// Replaces a comment's text; owner only.
     #[flags(write_op)]
     #[errors(errors::comments::NotFound)]
-    fn edit(comment: comment::Id, text: comment::Text) -> ok!(True);
+    fn edit(comment: comment::Id, text: comment::Text) -> True;
 
     /// Deletes a comment; owner only.
     ///
@@ -74,7 +74,7 @@ pub trait Comments {
     /// and author are wiped, the replies stay.
     #[flags(write_op)]
     #[errors(errors::comments::NotFound)]
-    fn delete(comment: comment::Id) -> ok!(True);
+    fn delete(comment: comment::Id) -> True;
 
     /// Likes a comment or retracts the like.
     #[flags(write_op)]

@@ -14,7 +14,7 @@ use eva::{
 use viendesu_http::format::{DumpParams, Format};
 use viendesu_protocol::{
     errors::{self, Aux, Generic},
-    requests::{comments, games, users},
+    requests::{Comments, Games, Users},
     types::{Patch, author, comment, entity, file, game, mark, user},
 };
 
@@ -129,7 +129,7 @@ fn game() -> game::Game {
 fn protocol_values() {
     assert_same_shape(&game());
 
-    assert_same_shape(&games::get::Args {
+    assert_same_shape(&Games::get::Args {
         game: game::Selector::FullyQualified(game::FullyQualified {
             author: author::Selector::Slug("acme".parse().unwrap()),
             slug: "my-game".parse().unwrap(),
@@ -139,7 +139,7 @@ fn protocol_values() {
         comments: true,
         related: false,
     });
-    assert_same_shape(&games::get::Args {
+    assert_same_shape(&Games::get::Args {
         game: game_id().into(),
         resolve_marks: false,
         latest_articles: true,
@@ -147,10 +147,10 @@ fn protocol_values() {
         related: true,
     });
 
-    assert_same_shape(&games::search::Args {
+    assert_same_shape(&Games::search::Args {
         query: Some("visual novel".parse().unwrap()),
         author: Some(author::Selector::Id(author_id())),
-        include: games::search::Marks {
+        include: Games::search::Marks {
             platforms_any: game::Platforms {
                 mac: true,
                 ios: true,
@@ -159,15 +159,15 @@ fn protocol_values() {
             ..Default::default()
         },
         exclude: Default::default(),
-        order: games::search::Order::Asc,
-        sort_by: games::search::SortBy::PublishedAt {
+        order: Games::search::Order::Asc,
+        sort_by: Games::search::SortBy::PublishedAt {
             after: Some((ts(), game_id())),
         },
         limit: None,
         resolve_marks: true,
     });
 
-    assert_same_shape(&games::update::Update {
+    assert_same_shape(&Games::update::Update {
         title: Patch::Change("New".parse().unwrap()),
         alt_titles: Patch::Keep,
         description: Patch::Change(None),
@@ -190,7 +190,7 @@ fn protocol_values() {
         )),
     });
 
-    assert_same_shape(&comments::list::Ok {
+    assert_same_shape(&Comments::list::Ok {
         comments: vec![comment::Comment {
             id: comment::Id::from_generic(raw(entity::Kind::Comment, 31)).unwrap(),
             author: Some(user_id(3)),
@@ -214,23 +214,23 @@ fn protocol_values() {
         )]),
     });
 
-    let spec: Generic<games::get::Err> = Generic::Spec(
+    let spec: Generic<Games::get::Err> = Generic::Spec(
         errors::games::NotFound {
             game: game_id().into(),
         }
         .into(),
     );
     assert_same_shape(&spec);
-    assert_same_shape(&Generic::<games::get::Err>::Aux(Aux::Unauthenticated));
-    assert_same_shape(&Generic::<users::sign_in::Err>::Spec(
+    assert_same_shape(&Generic::<Games::get::Err>::Aux(Aux::Unauthenticated));
+    assert_same_shape(&Generic::<Users::sign_in::Err>::Spec(
         errors::users::MustCompleteSignUp.into(),
     ));
-    assert_same_shape(&Generic::<games::get::Err>::Aux(Aux::Db("boom".into())));
+    assert_same_shape(&Generic::<Games::get::Err>::Aux(Aux::Db("boom".into())));
 }
 
 #[test]
 fn dates_decode_from_both_codecs() {
-    let args = games::create::Args {
+    let args = Games::create::Args {
         title: "T".parse().unwrap(),
         alt_titles: Default::default(),
         description: None,
@@ -250,7 +250,7 @@ fn dates_decode_from_both_codecs() {
     let mut json = Vec::new();
     Format::Json.dump(DumpParams::default(), &args, &mut json);
     assert_eq!(
-        Format::Json.load::<games::create::Args>(&json).unwrap(),
+        Format::Json.load::<Games::create::Args>(&json).unwrap(),
         args
     );
 }
@@ -258,7 +258,7 @@ fn dates_decode_from_both_codecs() {
 #[test]
 fn omitted_patch_fields_keep() {
     let empty = rmp_serde::to_vec_named(&serde_json::json!({})).unwrap();
-    let update: games::update::Update = Format::Msgpack.load(&empty).unwrap();
+    let update: Games::update::Update = Format::Msgpack.load(&empty).unwrap();
     assert_eq!(update.title, Patch::Keep);
     assert_eq!(update.published, Patch::Keep);
 }

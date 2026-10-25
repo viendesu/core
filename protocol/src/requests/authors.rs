@@ -9,7 +9,7 @@ use crate::{
 };
 
 /// Game authors: developers and circles.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Authors {
     /// Searches authors by text query, optionally owned by a user.
     ///
@@ -48,7 +48,7 @@ pub trait Authors {
         author: author::Selector,
         /// Specific update to apply.
         update: this![Update],
-    ) -> ok!(True);
+    ) -> True;
     embed! {
         #[serde_with::apply(Patch => #[serde(default)])]
         #[data]

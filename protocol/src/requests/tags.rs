@@ -4,7 +4,7 @@ use eva::{array, service, str};
 use crate::types::mark;
 
 /// Game tags.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Tags {
     /// Gets tags by id, at most 16; unknown ids are skipped.
     fn get_many(

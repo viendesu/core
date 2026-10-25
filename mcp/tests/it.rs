@@ -9,8 +9,9 @@ use http_body_util::BodyExt;
 use serde_json::{Value, json};
 use tower::util::ServiceExt;
 
-use viendesu_core::service::{AuxFut, CallStep, Session, SessionMaker, authz::Authentication};
-use viendesu_protocol::requests::{Response, genres, tags};
+use eva::handling::CallStep;
+use viendesu_core::service::{AuxFut, Session, SessionMaker, authz::Authentication};
+use viendesu_protocol::requests::{Genres, Response, Tags};
 
 // == Mock service ==
 
@@ -30,11 +31,11 @@ impl<I: Send, O: Send, E: Send> CallStep<I> for Fail<O, E> {
 
 struct ListGenres;
 
-impl CallStep<genres::list::Args> for ListGenres {
-    type Output = Response<genres::list::Ok, genres::list::Err>;
+impl CallStep<Genres::list::Args> for ListGenres {
+    type Output = Response<Genres::list::Ok, Genres::list::Err>;
 
-    async fn call(&mut self, _: genres::list::Args) -> Self::Output {
-        Ok(genres::list::Ok {
+    async fn call(&mut self, _: Genres::list::Args) -> Self::Output {
+        Ok(Genres::list::Ok {
             genres: ["romance".parse().unwrap(), "horror".parse().unwrap()]
                 .try_into()
                 .unwrap(),
@@ -44,11 +45,11 @@ impl CallStep<genres::list::Args> for ListGenres {
 
 struct ListTags;
 
-impl CallStep<tags::list::Args> for ListTags {
-    type Output = Response<tags::list::Ok, tags::list::Err>;
+impl CallStep<Tags::list::Args> for ListTags {
+    type Output = Response<Tags::list::Ok, Tags::list::Err>;
 
-    async fn call(&mut self, _: tags::list::Args) -> Self::Output {
-        Ok(tags::list::Ok { tags: vec![] })
+    async fn call(&mut self, _: Tags::list::Args) -> Self::Output {
+        Ok(Tags::list::Ok { tags: vec![] })
     }
 }
 

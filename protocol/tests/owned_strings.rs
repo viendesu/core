@@ -3,7 +3,7 @@
 
 use serde_json::json;
 
-use viendesu_protocol::requests::games;
+use viendesu_protocol::requests::Games;
 
 #[test]
 fn release_date_from_value() {
@@ -13,6 +13,6 @@ fn release_date_from_value() {
         "release_date": { "date": "04.10.2024", "precision": "day" },
     });
 
-    let args: games::create::Args = serde_json::from_value(args).unwrap();
+    let args: Games::create::Args = serde_json::from_value(args).unwrap();
     assert!(args.release_date.is_some());
 }

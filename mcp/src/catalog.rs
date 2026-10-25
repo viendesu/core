@@ -6,7 +6,8 @@
 
 use crate::registry::Tools;
 
-use viendesu_core::service::{CallStep as _, IsSession, Session};
+use eva::handling::CallStep as _;
+use viendesu_core::service::{IsSession, Session};
 
 /// Appends LLM-only doc lines to the descriptions of the listed
 /// `accessor::method` tools.

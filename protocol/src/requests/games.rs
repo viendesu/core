@@ -9,7 +9,7 @@ use crate::{
 };
 
 /// The game catalog.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Games {
     /// Sets the caller's rating, replacing the previous one.
     #[flags(write_op)]
@@ -37,7 +37,7 @@ pub trait Games {
         errors::games::BadRelation,
         errors::games::TooManyRelations
     )]
-    fn update(id: game::Id, update: this![Update]) -> ok!(True);
+    fn update(id: game::Id, update: this![Update]) -> True;
     embed! {
         #[serde_with::apply(Patch => #[serde(default)])]
         #[data]

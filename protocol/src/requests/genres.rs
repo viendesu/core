@@ -1,11 +1,10 @@
 use crate::requests::Response;
-use eva::array;
-use eva::service;
+use eva::{array, service};
 
 use crate::types::mark;
 
 /// Game genres.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Genres {
     /// Lists all genres.
     fn list() -> ok! {

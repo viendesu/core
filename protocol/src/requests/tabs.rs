@@ -9,7 +9,7 @@ use crate::{
 };
 
 /// User profile tabs: named lists of games or authors.
-#[service(export, result = Response)]
+#[service(result = Response)]
 pub trait Tabs {
     /// Lists tabs of a user.
     #[errors(errors::users::NotFound)]
@@ -34,7 +34,7 @@ pub trait Tabs {
         start_from: Option<entity::Id>,
         #[serde(default)] limit: this![Limit],
         #[serde(default)] resolve_marks: bool,
-    ) -> ok!(this![Value]);
+    ) -> this![Value];
     embed! {
         #[int(u8, 1..=64)]
         pub enum Limit {}
@@ -69,7 +69,7 @@ pub trait Tabs {
         errors::tabs::InvalidItemId,
         errors::tabs::Duplicate
     )]
-    fn insert(user: user::Id, tab: tab::Id, item: entity::Id) -> ok!(True);
+    fn insert(user: user::Id, tab: tab::Id, item: entity::Id) -> True;
 
     /// Removes an item from a tab.
     #[flags(write_op)]
@@ -78,12 +78,5 @@ pub trait Tabs {
         errors::tabs::NoSuchItem,
         errors::tabs::NoSuchTab
     )]
-    fn delete(
-        user: user::Id,
-        tab: tab::Id,
-        item: entity::Id,
-    ) -> ok!(
-        #[data(copy)]
-        True
-    );
+    fn delete(user: user::Id, tab: tab::Id, item: entity::Id) -> True;
 }
