@@ -1,12 +1,13 @@
-pub use Sys::healthcheck;
-
 use crate::requests::Response;
-use crate::types::True;
 use eva::service;
 
-#[service(result = Response)]
+use crate::types::True;
+
+#[service(export, result = Response)]
 pub trait Sys {
     #[args(derive(Default))]
-    #[ok(data(copy))]
-    fn healthcheck() -> True;
+    fn healthcheck() -> ok!(
+        #[data(copy)]
+        True
+    );
 }

@@ -1,26 +1,31 @@
-pub use Blogs::{edit, get};
-
 use crate::requests::Response;
+use eva::service;
+
 use crate::{
     errors,
     types::{Patch, True, blog},
 };
-use eva::service;
 
 // `edit` with every field patched to `None` deletes the blog metadata
 // entirely: a blog with empty metadata is not stored.
 
 /// Blogs: a facet of a user, author or game, keyed by its id.
-#[service(result = Response)]
+#[service(export, result = Response)]
 pub trait Blogs {
     /// Gets a blog with its resolved owner.
-    #[errors(errors::blogs::NotFound, errors::users::NotFound as NoSuchUser, errors::authors::NotFound as NoSuchAuthor, errors::games::NotFound as NoSuchGame)]
+    #[errors(
+        errors::blogs::NotFound,
+        errors::users::NotFound as NoSuchUser,
+        errors::authors::NotFound as NoSuchAuthor,
+        errors::games::NotFound as NoSuchGame,
+    )]
     fn get(
         blog: blog::Selector,
     ) -> ok! {
         blog: blog::Blog,
         owner: blog::Owner,
     };
+
     /// Patches blog metadata; owner only.
     ///
     /// Patching every field to `None` deletes the metadata.
@@ -31,5 +36,5 @@ pub trait Blogs {
         blog: blog::Id,
         title: Patch<Option<blog::Title>>,
         description: Patch<Option<blog::Description>>,
-    ) -> True;
+    ) -> ok!(True);
 }

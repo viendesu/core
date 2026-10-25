@@ -1,5 +1,3 @@
-pub use Articles::{create, delete, edit, get};
-
 use crate::requests::Response;
 use eva::int;
 use eva::service;
@@ -9,31 +7,31 @@ use crate::{
     types::{Patch, True, article, blog},
 };
 
-pub mod search {
-    pub use super::Articles::search::*;
-    use super::*;
-    #[int(u8, 1..=64)]
-    pub enum Limit {}
-    impl Default for Limit {
-        fn default() -> Self {
-            Self::POS24
-        }
-    }
-}
-
 /// Blog articles; content is CommonMark.
-#[service(result = Response)]
+#[service(export, result = Response)]
 pub trait Articles {
     /// Lists articles of a blog, newest first, paginated via `before`.
-    #[ok(doc = " Results are ordered newest first.")]
     #[errors(errors::blogs::NotFound as NoSuchBlog)]
     fn search(
         blog: blog::Id,
-        #[serde(default)] limit: crate::requests::articles::search::Limit,
+        #[serde(default)] limit: this![Limit],
         before: Option<article::Id>,
     ) -> ok! {
+        #![doc = " Results are ordered newest first."]
+
         results: Vec<article::Brief>,
     };
+    embed! {
+        #[int(u8, 1..=64)]
+        pub enum Limit {}
+
+        impl Default for Limit {
+            fn default() -> Self {
+                Self::POS24
+            }
+        }
+    }
+
     /// Gets an article.
     #[errors(errors::articles::NotFound)]
     fn get(
@@ -45,6 +43,7 @@ pub trait Articles {
     ) -> ok! {
         article: article::Article,
     };
+
     /// Publishes an article; requires owning the blog.
     #[flags(write_op)]
     #[errors(errors::blogs::NotFound as NoSuchBlog, errors::blogs::NotAnOwner)]
@@ -55,6 +54,7 @@ pub trait Articles {
     ) -> ok! {
         id: article::Id,
     };
+
     /// Patches an article; owner only.
     #[flags(write_op)]
     #[args(serde_with::apply(Patch => #[serde(default)]))]
@@ -63,9 +63,10 @@ pub trait Articles {
         article: article::Id,
         title: Patch<article::Title>,
         content: Patch<article::Content>,
-    ) -> True;
+    ) -> ok!(True);
+
     /// Deletes an article; owner only.
     #[flags(write_op)]
     #[errors(errors::articles::NotFound, errors::articles::NotAnOwner)]
-    fn delete(article: article::Id) -> True;
+    fn delete(article: article::Id) -> ok!(True);
 }

@@ -1,47 +1,15 @@
-use crate::requests::Response;
 use std::collections::HashMap;
 
-pub use Authors::{create, get};
-
+use crate::requests::Response;
 use eva::{data, int, service, str::CompactString};
 
 use crate::{
-    errors::{
-        self,
-        authors::{AlreadyExists, NotFound},
-        users as users_errors,
-    },
+    errors,
     types::{Patch, True, author, file, user},
 };
 
-pub mod search {
-    pub use super::Authors::search::*;
-    use super::*;
-    #[int(u8, 1..=32)]
-    pub enum Limit {}
-    impl Default for Limit {
-        fn default() -> Self {
-            Self::POS15
-        }
-    }
-}
-
-pub mod update {
-    pub use super::Authors::update::*;
-    use super::*;
-    #[serde_with::apply(Patch => #[serde(default)])]
-    #[data]
-    pub struct Update {
-        pub title: Patch<author::Title>,
-        pub description: Patch<Option<author::Description>>,
-        pub pfp: Patch<Option<file::Id>>,
-        pub slug: Patch<author::Slug>,
-        pub verified: Patch<bool>,
-    }
-}
-
 /// Game authors: developers and circles.
-#[service(result = Response)]
+#[service(export, result = Response)]
 pub trait Authors {
     /// Searches authors by text query, optionally owned by a user.
     ///
@@ -51,31 +19,66 @@ pub trait Authors {
         query: CompactString,
         owned_by: Option<user::Selector>,
         start_from: Option<author::Id>,
-        limit: Option<crate::requests::authors::search::Limit>,
+        limit: Option<this![Limit]>,
     ) -> ok! {
         authors: Vec<author::Author>,
         users: HashMap<user::Id, user::Mini>,
     };
+    embed! {
+        #[int(u8, 1..=32)]
+        pub enum Limit {}
+
+        impl Default for Limit {
+            fn default() -> Self {
+                Self::POS15
+            }
+        }
+    }
+
     /// Patches an author.
     #[flags(write_op)]
-    #[errors(NotFound, AlreadyExists, errors::files::NotFound as FileNotFound, errors::files::UnexpectedFileClass)]
+    #[errors(
+        errors::authors::NotFound,
+        errors::authors::AlreadyExists,
+        errors::files::NotFound as FileNotFound,
+        errors::files::UnexpectedFileClass,
+    )]
     fn update(
         /// Who to update.
         author: author::Selector,
         /// Specific update to apply.
-        update: crate::requests::authors::update::Update,
-    ) -> True;
+        update: this![Update],
+    ) -> ok!(True);
+    embed! {
+        #[serde_with::apply(Patch => #[serde(default)])]
+        #[data]
+        pub struct Update {
+            pub title: Patch<author::Title>,
+            pub description: Patch<Option<author::Description>>,
+            pub pfp: Patch<Option<file::Id>>,
+            pub slug: Patch<author::Slug>,
+            pub verified: Patch<bool>,
+        }
+    }
+
     /// Gets an author.
-    #[errors(NotFound)]
+    #[errors(errors::authors::NotFound)]
     fn get(
         author: author::Selector,
     ) -> ok! {
         author: author::Author,
         users: HashMap<user::Id, user::Mini>,
     };
+
     /// Creates an author.
     #[flags(write_op)]
-    #[errors(NotFound, AlreadyExists, users_errors::NotFound as NoSuchUser, errors::files::NotFound as FileNotFound, errors::files::UnexpectedFileClass)]
+    #[errors(
+        errors::authors::NotFound,
+        errors::authors::AlreadyExists,
+        errors::users::NotFound as NoSuchUser,
+        errors::files::NotFound as FileNotFound,
+        errors::files::UnexpectedFileClass,
+    )]
     fn create(
         title: author::Title,
         slug: author::Slug,

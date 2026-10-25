@@ -1,8 +1,6 @@
-use crate::requests::Response;
 use std::num::NonZeroU64;
 
-pub use Uploads::{abort, finish, list_pending};
-
+use crate::requests::Response;
 use eva::{data, service, str};
 
 use crate::{
@@ -11,29 +9,8 @@ use crate::{
     uploads::UploadStream,
 };
 
-pub mod start {
-    pub use super::Uploads::start::*;
-    use super::*;
-    #[data(copy)]
-    pub enum ImageType {
-        #[serde(alias = "image/png")]
-        Png,
-        #[serde(alias = "image/jpeg")]
-        Jpg,
-        #[serde(alias = "image/webp")]
-        Webp,
-        #[serde(alias = "image/bmp")]
-        Bmp,
-    }
-    #[data]
-    pub enum FileClass {
-        Image(ImageType),
-        GameFile,
-    }
-}
-
 /// File uploads: `start` reserves one, `finish` streams the bytes.
-#[service(result = Response)]
+#[service(export, result = Response)]
 pub trait Uploads {
     /// Reserves an upload against the per-class byte quotas.
     #[flags(write_op)]
@@ -50,13 +27,33 @@ pub trait Uploads {
         /// Hash of the file. If specified - verify hashes when finishing.
         hash: Option<file::Hash>,
         /// Class of the file.
-        class: crate::requests::uploads::start::FileClass,
+        class: this![FileClass],
         /// Size of the file to upload. Must be known
         /// prior to upload, streaming is not supported.
         size: NonZeroU64,
     ) -> ok! {
         upload: upload::Id,
     };
+    embed! {
+        #[data(copy)]
+        pub enum ImageType {
+            #[serde(alias = "image/png")]
+            Png,
+            #[serde(alias = "image/jpeg")]
+            Jpg,
+            #[serde(alias = "image/webp")]
+            Webp,
+            #[serde(alias = "image/bmp")]
+            Bmp,
+        }
+
+        #[data]
+        pub enum FileClass {
+            Image(ImageType),
+            GameFile,
+        }
+    }
+
     /// Streams the file contents of an upload.
     ///
     /// The upload is consumed whatever the outcome; a failed one is
@@ -78,11 +75,17 @@ pub trait Uploads {
     ) -> ok! {
         file: file::Id,
     };
+
     /// Cancels an unfinished upload.
     #[flags(write_op)]
-    #[ok(data(copy))]
     #[errors(errors::uploads::NotFound)]
-    fn abort(upload: upload::Id) -> True;
+    fn abort(
+        upload: upload::Id,
+    ) -> ok!(
+        #[data(copy)]
+        True
+    );
+
     /// Lists the caller's unfinished uploads.
     #[error(errors::Impossible)]
     fn list_pending() -> ok! {

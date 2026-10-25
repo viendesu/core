@@ -1,14 +1,13 @@
-pub use Boards::{create, delete, edit, get};
-
 use crate::requests::Response;
+use eva::service;
+
 use crate::{
     errors,
     types::{Patch, True, board, message},
 };
-use eva::service;
 
 /// Forum boards.
-#[service(result = Response)]
+#[service(export, result = Response)]
 pub trait Boards {
     /// Patches a board.
     #[flags(write_op)]
@@ -17,11 +16,13 @@ pub trait Boards {
         board: board::Selector,
         text: Patch<message::Text>,
         slug: Patch<Option<board::Slug>>,
-    ) -> True;
+    ) -> ok!(True);
+
     /// Deletes a board.
     #[flags(write_op)]
     #[errors(errors::boards::NotFound)]
-    fn delete(board: board::Selector) -> True;
+    fn delete(board: board::Selector) -> ok!(True);
+
     /// Creates a board with its initial message.
     #[flags(write_op)]
     #[errors(errors::boards::AlreadyExists)]
@@ -32,6 +33,7 @@ pub trait Boards {
     ) -> ok! {
         id: board::Id,
     };
+
     /// Gets a board.
     #[errors(errors::boards::NotFound)]
     fn get(

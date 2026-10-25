@@ -1,8 +1,7 @@
-pub use Comments::{create, delete, edit, like, list, replies};
+use std::collections::HashMap;
 
 use crate::requests::Response;
 use eva::service;
-use std::collections::HashMap;
 
 use crate::{
     errors,
@@ -10,12 +9,11 @@ use crate::{
 };
 
 /// Game comments, threaded one level deep.
-#[service(result = Response)]
+#[service(export, result = Response)]
 pub trait Comments {
     /// Lists top-level comments of a game.
     ///
     /// Paginated via `before`, plus `before_likes` for `Sort::Top`.
-    #[ok(doc = " Top-level comments only; fetch replies via `replies`.")]
     #[errors(errors::games::NotFound as NoSuchGame)]
     fn list(
         game: game::Id,
@@ -28,11 +26,13 @@ pub trait Comments {
         before_likes: Option<comment::Likes>,
         #[serde(default)] limit: comment::Limit,
     ) -> ok! {
+        #![doc = " Top-level comments only; fetch replies via `replies`."]
+
         comments: Vec<comment::Comment>,
         users: HashMap<user::Id, user::Mini>,
     };
+
     /// Lists replies to a top-level comment, paginated via `after`.
-    #[ok(doc = " Results are ordered oldest first.")]
     #[errors(errors::comments::NotFound)]
     fn replies(
         comment: comment::Id,
@@ -40,12 +40,19 @@ pub trait Comments {
         after: Option<comment::Id>,
         #[serde(default)] limit: comment::Limit,
     ) -> ok! {
+        #![doc = " Results are ordered oldest first."]
+
         comments: Vec<comment::Comment>,
         users: HashMap<user::Id, user::Mini>,
     };
+
     /// Comments on a game, or replies to a top-level comment via `parent`.
     #[flags(write_op)]
-    #[errors(errors::games::NotFound as NoSuchGame, errors::comments::NotFound as NoSuchParent, errors::comments::InvalidParent)]
+    #[errors(
+        errors::games::NotFound as NoSuchGame,
+        errors::comments::NotFound as NoSuchParent,
+        errors::comments::InvalidParent,
+    )]
     fn create(
         game: game::Id,
         text: comment::Text,
@@ -55,17 +62,20 @@ pub trait Comments {
     ) -> ok! {
         id: comment::Id,
     };
+
     /// Replaces a comment's text; owner only.
     #[flags(write_op)]
     #[errors(errors::comments::NotFound)]
-    fn edit(comment: comment::Id, text: comment::Text) -> True;
+    fn edit(comment: comment::Id, text: comment::Text) -> ok!(True);
+
     /// Deletes a comment; owner only.
     ///
     /// A top-level comment with replies is tombstoned instead: its text
     /// and author are wiped, the replies stay.
     #[flags(write_op)]
     #[errors(errors::comments::NotFound)]
-    fn delete(comment: comment::Id) -> True;
+    fn delete(comment: comment::Id) -> ok!(True);
+
     /// Likes a comment or retracts the like.
     #[flags(write_op)]
     #[errors(errors::comments::NotFound)]

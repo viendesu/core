@@ -1,13 +1,11 @@
-pub use Badges::{add, list};
-
 use crate::requests::Response;
-use crate::types::mark;
 use eva::service;
-
 use eva::str;
 
+use crate::types::mark;
+
 /// Game badges.
-#[service(result = Response)]
+#[service(export, result = Response)]
 pub trait Badges {
     /// Lists badges matching the query, all without one.
     fn list(
@@ -15,6 +13,7 @@ pub trait Badges {
     ) -> ok! {
         badges: Vec<mark::TextEntry<mark::Badge>>,
     };
+
     /// Registers a badge.
     #[flags(write_op)]
     fn add(
