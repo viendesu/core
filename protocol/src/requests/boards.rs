@@ -1,9 +1,9 @@
 use crate::requests::Response;
-use eva::service;
+use eva::{True, service};
 
 use crate::{
     errors,
-    types::{Patch, True, board, message},
+    types::{Patch, board, message},
 };
 
 /// Forum boards.

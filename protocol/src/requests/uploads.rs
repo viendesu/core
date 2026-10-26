@@ -1,11 +1,11 @@
 use std::num::NonZeroU64;
 
 use crate::requests::Response;
-use eva::{data, service, str};
+use eva::{True, data, service, str};
 
 use crate::{
     errors,
-    types::{True, file, upload},
+    types::{file, upload},
     uploads::UploadStream,
 };
 

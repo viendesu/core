@@ -1,9 +1,9 @@
 use crate::requests::Response;
-use eva::service;
+use eva::{True, service};
 
 use crate::{
     errors,
-    types::{Patch, True, blog},
+    types::{Patch, blog},
 };
 
 // `edit` with every field patched to `None` deletes the blog metadata

@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use crate::requests::Response;
-use eva::service;
+use eva::{True, service};
 
 use crate::{
     errors,
-    types::{True, comment, game, user},
+    types::{comment, game, user},
 };
 
 /// Game comments, threaded one level deep.

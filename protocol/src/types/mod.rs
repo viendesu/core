@@ -1,5 +1,4 @@
 pub use self::patch::Patch;
-pub use eva::{False, True};
 
 pub mod board;
 pub mod message;

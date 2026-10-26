@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use crate::requests::Response;
-use eva::{array, data, int, service, str, time};
+use eva::{True, array, data, int, service, str, time};
 
 use crate::{
     errors,
-    types::{Patch, True, article, author, comment, file, game, mark, user},
+    types::{Patch, article, author, comment, file, game, mark, user},
 };
 
 /// The game catalog.

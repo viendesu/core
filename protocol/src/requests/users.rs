@@ -3,11 +3,11 @@
 //! Subject of actions.
 
 use crate::requests::Response;
-use eva::{data, int, service, str::CompactString, time::Timestamp};
+use eva::{True, data, int, service, str::CompactString, time::Timestamp};
 
 use crate::{
     errors,
-    types::{True, file, patch::Patch, session, user},
+    types::{file, patch::Patch, session, user},
 };
 
 /// Accounts, sessions and profiles.

@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use crate::requests::Response;
-use eva::{data, int, service, str::CompactString};
+use eva::{True, data, int, service, str::CompactString};
 
 use crate::{
     errors,
-    types::{Patch, True, author, file, user},
+    types::{Patch, author, file, user},
 };
 
 /// Game authors: developers and circles.

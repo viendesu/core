@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use crate::requests::Response;
-use eva::{data, int, service};
+use eva::{True, data, int, service};
 
 use crate::{
     errors,
-    types::{True, author, entity, game, tab, user},
+    types::{author, entity, game, tab, user},
 };
 
 /// User profile tabs: named lists of games or authors.
