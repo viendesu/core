@@ -62,7 +62,7 @@ pub trait Tabs {
     }
 
     /// Adds an item to a tab.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(
         errors::tabs::InvalidKind,
         errors::tabs::NoSuchTab,
@@ -72,7 +72,7 @@ pub trait Tabs {
     fn insert(user: user::Id, tab: tab::Id, item: entity::Id) -> True;
 
     /// Removes an item from a tab.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(
         errors::tabs::InvalidItemId,
         errors::tabs::NoSuchItem,

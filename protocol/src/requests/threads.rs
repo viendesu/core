@@ -28,12 +28,12 @@ pub trait Threads {
     }
 
     /// Deletes a thread.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::threads::NotFound)]
     fn delete(thread: thread::Id) -> True;
 
     /// Patches a thread; owner only.
-    #[flags(write_op)]
+    #[flags(write)]
     #[args(serde_with::apply(Patch => #[serde(default)]))]
     #[errors(errors::threads::NotFound, errors::threads::NotAnOwner)]
     fn edit(thread: thread::Id, text: Patch<message::Text>) -> True;
@@ -47,7 +47,7 @@ pub trait Threads {
     };
 
     /// Opens a thread on a board with its initial message.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(NoSuchBoard(errors::boards::NotFound))]
     fn create(
         board: board::Selector,

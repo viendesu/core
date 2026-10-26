@@ -14,7 +14,7 @@ pub trait Badges {
     };
 
     /// Registers a badge.
-    #[flags(write_op)]
+    #[flags(write)]
     fn add(
         badge: str::CompactString,
     ) -> ok! {

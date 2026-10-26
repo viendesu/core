@@ -13,7 +13,7 @@ use crate::{
 #[service(result = Response)]
 pub trait Uploads {
     /// Reserves an upload against the per-class byte quotas.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(
         errors::uploads::QuotaExceeded,
         errors::uploads::SimUpQuotaExceeded,
@@ -58,7 +58,7 @@ pub trait Uploads {
     ///
     /// The upload is consumed whatever the outcome; a failed one is
     /// started anew.
-    #[flags(write_op, stream)]
+    #[flags(write, stream)]
     #[args(data(not(Debug, serde, schemars, Clone, PartialEq)))]
     #[errors(
         errors::uploads::UnableToValidateClass,
@@ -77,7 +77,7 @@ pub trait Uploads {
     };
 
     /// Cancels an unfinished upload.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::uploads::NotFound)]
     fn abort(upload: upload::Id) -> True;
 

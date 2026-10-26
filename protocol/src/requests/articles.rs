@@ -44,7 +44,7 @@ pub trait Articles {
     };
 
     /// Publishes an article; requires owning the blog.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(NoSuchBlog(errors::blogs::NotFound), errors::blogs::NotAnOwner)]
     fn create(
         blog: blog::Id,
@@ -55,7 +55,7 @@ pub trait Articles {
     };
 
     /// Patches an article; owner only.
-    #[flags(write_op)]
+    #[flags(write)]
     #[args(serde_with::apply(Patch => #[serde(default)]))]
     #[errors(errors::articles::NotFound, errors::articles::NotAnOwner)]
     fn edit(
@@ -65,7 +65,7 @@ pub trait Articles {
     ) -> True;
 
     /// Deletes an article; owner only.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::articles::NotFound, errors::articles::NotAnOwner)]
     fn delete(article: article::Id) -> True;
 }

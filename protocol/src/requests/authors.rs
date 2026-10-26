@@ -36,7 +36,7 @@ pub trait Authors {
     }
 
     /// Patches an author.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(
         errors::authors::NotFound,
         errors::authors::AlreadyExists,
@@ -71,7 +71,7 @@ pub trait Authors {
     };
 
     /// Creates an author.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(
         errors::authors::NotFound,
         errors::authors::AlreadyExists,

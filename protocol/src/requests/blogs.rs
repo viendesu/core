@@ -29,7 +29,7 @@ pub trait Blogs {
     /// Patches blog metadata; owner only.
     ///
     /// Patching every field to `None` deletes the metadata.
-    #[flags(write_op)]
+    #[flags(write)]
     #[args(serde_with::apply(Patch => #[serde(default)]))]
     #[errors(errors::blogs::NotFound, errors::blogs::NotAnOwner)]
     fn edit(

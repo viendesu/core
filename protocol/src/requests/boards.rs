@@ -10,7 +10,7 @@ use crate::{
 #[service(result = Response)]
 pub trait Boards {
     /// Patches a board.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::boards::NotFound)]
     fn edit(
         board: board::Selector,
@@ -19,12 +19,12 @@ pub trait Boards {
     ) -> True;
 
     /// Deletes a board.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::boards::NotFound)]
     fn delete(board: board::Selector) -> True;
 
     /// Creates a board with its initial message.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::boards::AlreadyExists)]
     fn create(
         slug: board::Slug,

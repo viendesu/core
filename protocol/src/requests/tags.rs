@@ -24,7 +24,7 @@ pub trait Tags {
     };
 
     /// Registers a tag.
-    #[flags(write_op)]
+    #[flags(write)]
     fn add(
         tag: str::CompactString,
     ) -> ok! {

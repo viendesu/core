@@ -12,7 +12,7 @@ use crate::{
 #[service(result = Response)]
 pub trait Games {
     /// Sets the caller's rating, replacing the previous one.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::games::NotFound)]
     fn rate(
         id: game::Id,
@@ -24,7 +24,7 @@ pub trait Games {
     };
 
     /// Patches a game.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(
         errors::games::NotFound,
         errors::games::AlreadyTaken,
@@ -158,7 +158,7 @@ pub trait Games {
     /// Adds a game.
     ///
     /// `author` must be owned by the caller unless it has a moderation role.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(
         NoSuchAuthor(errors::authors::NotFound),
         errors::games::AlreadyTaken,

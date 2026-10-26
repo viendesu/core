@@ -36,7 +36,7 @@ pub trait Users {
     ///
     /// The returned id is a secret capability: only the caller may redeem
     /// it via `finish_auth`, and only before it expires.
-    #[flags(write_op)]
+    #[flags(write)]
     fn begin_auth(
         method: user::AuthoredAuth,
     ) -> ok! {
@@ -44,7 +44,7 @@ pub trait Users {
     };
 
     /// Redeems an auth session begun by the caller for a session token.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::users::NoSuchAuthSession)]
     fn finish_auth(
         auth_session: user::AuthSessionId,
@@ -64,7 +64,7 @@ pub trait Users {
     /// Patches a user; `None` selects the caller.
     ///
     /// Updating others requires a moderation role.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(
         errors::users::NotFound,
         FileNotFound(errors::files::NotFound),
@@ -96,12 +96,12 @@ pub trait Users {
     };
 
     /// Completes a pending sign-up with its completion token.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::users::InvalidSignUpToken, errors::users::NotFoundOrCompleted)]
     fn confirm_sign_up(user: user::Id, token: user::SignUpCompletionToken) -> True;
 
     /// Exchanges nickname and password for a session token.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(
         errors::users::NotFound,
         errors::users::InvalidPassword,
@@ -116,7 +116,7 @@ pub trait Users {
     };
 
     /// Registers a user; signing in requires `confirm_sign_up` first.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::users::AlreadyTaken, errors::users::SignUpDisabled)]
     fn sign_up(
         nickname: user::Nickname,

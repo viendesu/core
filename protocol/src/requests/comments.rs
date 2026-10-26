@@ -47,7 +47,7 @@ pub trait Comments {
     };
 
     /// Comments on a game, or replies to a top-level comment via `parent`.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(
         NoSuchGame(errors::games::NotFound),
         NoSuchParent(errors::comments::NotFound),
@@ -64,7 +64,7 @@ pub trait Comments {
     };
 
     /// Replaces a comment's text; owner only.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::comments::NotFound)]
     fn edit(comment: comment::Id, text: comment::Text) -> True;
 
@@ -72,12 +72,12 @@ pub trait Comments {
     ///
     /// A top-level comment with replies is tombstoned instead: its text
     /// and author are wiped, the replies stay.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::comments::NotFound)]
     fn delete(comment: comment::Id) -> True;
 
     /// Likes a comment or retracts the like.
-    #[flags(write_op)]
+    #[flags(write)]
     #[errors(errors::comments::NotFound)]
     fn like(
         comment: comment::Id,

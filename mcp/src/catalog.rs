@@ -64,7 +64,7 @@ pub struct Endpoint {
 
 impl Endpoint {
     pub fn is_write(&self) -> bool {
-        self.flags.contains(&"write_op")
+        self.flags.contains(&"write")
     }
 }
 
