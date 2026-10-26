@@ -349,6 +349,57 @@ async fn malformed_requests() {
     assert!(mock.calls().is_empty());
 }
 
+#[tokio::test]
+async fn json_syntax_errors_take_precedence_over_envelope_errors() {
+    let mock = Mock::default();
+    for (body, expected) in [
+        (r#"{"method":false}"#, code::INVALID_REQUEST),
+        (r#"{"method":false,"params":}"#, code::PARSE_ERROR),
+        (r#"{"method":false} false"#, code::PARSE_ERROR),
+        (
+            r#"{"jsonrpc":"1.0","method":"users.check_auth"} false"#,
+            code::PARSE_ERROR,
+        ),
+        (
+            r#"{"jsonrpc":"2.0","method":"users.check_auth","method":"users.check_auth"}"#,
+            code::INVALID_REQUEST,
+        ),
+        (
+            r#"{"jsonrpc":"2.0","method":"users.check_auth","method":"users.check_auth","params":}"#,
+            code::PARSE_ERROR,
+        ),
+        ("\u{000b}{\"method\":false}", code::PARSE_ERROR),
+    ] {
+        let reply = send(&mock, json_body(body)).await;
+        assert_eq!(reply.error_code(), i64::from(expected), "{body}");
+    }
+
+    let body = b"{\"jsonrpc\":\"2.0\",\"method\":\"users.check_auth\",\"ignored\":\"\xff\"}";
+    let request = post("application/json")
+        .body(Body::from(body.as_slice()))
+        .unwrap();
+    assert_eq!(
+        send(&mock, request).await.error_code(),
+        i64::from(code::PARSE_ERROR)
+    );
+    assert!(mock.calls().is_empty());
+}
+
+#[tokio::test]
+async fn json_batch_is_fully_validated_before_dispatch() {
+    let mock = Mock::default();
+    for body in [
+        r#"[{"jsonrpc":"2.0","id":1,"method":"users.check_auth"},"#,
+        r#"[{"jsonrpc":"2.0","id":1,"method":"users.check_auth"}] false"#,
+        r#"[{"method":false}, {"params":}]"#,
+        "[0,0,0,0,0,0,]",
+    ] {
+        let reply = send(&mock, authed(json_body(body))).await;
+        assert_eq!(reply.error_code(), i64::from(code::PARSE_ERROR), "{body}");
+    }
+    assert!(mock.calls().is_empty());
+}
+
 /// {"jsonrpc": "2.0", "id": 1, "method": "games.nope", "method": "users.check_auth"}
 fn duplicate_method() -> Vec<u8> {
     let mut body = vec![0x84];
@@ -638,6 +689,44 @@ async fn batch_of_notifications_has_no_body() {
     assert_eq!(reply.status, StatusCode::NO_CONTENT);
     assert!(reply.body.is_empty());
     assert_eq!(mock.calls().len(), 2);
+}
+
+#[tokio::test]
+async fn batch_framing_omits_notifications_in_both_codecs() {
+    let mock = Mock::default();
+    mock.reply("genres.list", json!({ "ok": { "genres": [] } }));
+    let notification = json!({ "jsonrpc": "2.0", "method": "genres.list" });
+    let with_null_id = json!({ "jsonrpc": "2.0", "id": null, "method": "genres.list" });
+
+    for encode in [json_request, msgpack_request] {
+        for (batch, count) in [
+            (json!([notification, notification]), 0),
+            (json!([notification, with_null_id, notification]), 1),
+            (json!([with_null_id, notification, 7, notification]), 2),
+            (json!([7, notification, with_null_id]), 2),
+        ] {
+            let reply = send(&mock, authed(encode(batch))).await;
+            if count == 0 {
+                assert_eq!(reply.status, StatusCode::NO_CONTENT);
+                assert!(reply.body.is_empty());
+                continue;
+            }
+            let body = match reply.content_type() {
+                "application/json" => reply.json(),
+                _ => reply.msgpack(),
+            };
+            let replies = body.as_array().unwrap();
+            assert_eq!(replies.len(), count);
+            assert!(replies.iter().all(|reply| reply["id"].is_null()));
+            assert_eq!(
+                replies
+                    .iter()
+                    .filter(|reply| reply.get("result").is_some())
+                    .count(),
+                1
+            );
+        }
+    }
 }
 
 #[tokio::test]

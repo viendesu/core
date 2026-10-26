@@ -49,7 +49,8 @@ async fn finish<T: Types>(
     request: Request,
 ) -> Response {
     let format = extract::response_format(&headers, Format::Json);
-    let body = outcome::<T>(&service, id, &headers, format, request).await;
+    let mut body = Vec::new();
+    outcome::<T>(&service, id, &headers, format, request, &mut body).await;
 
     let mut response = reply(format, body);
     // The body may stay unread (early rejection, service error), which spoils the connection.
@@ -65,24 +66,28 @@ async fn outcome<T: Types>(
     headers: &HeaderMap,
     format: Format,
     request: Request,
-) -> Vec<u8> {
-    let call = Call {
+    body: &mut Vec<u8>,
+) {
+    let mut call = Call {
         format,
-        id: &Id::Null,
+        id: Some(&Id::Null),
         params: envelope::Params::Absent,
+        body,
     };
 
     let id = match id {
         Ok(Path(id)) => id,
         Err(rejection) => {
-            let message = format!("invalid params: upload id: {rejection}");
-            return call.fail(code::INVALID_PARAMS, &message);
+            return call.fail(
+                code::INVALID_PARAMS,
+                &format!("invalid params: upload id: {rejection}"),
+            );
         }
     };
 
     let mut session = match session::<T>(service, headers).await {
         Ok(session) => session,
-        Err(failure) => return failure.answer(&call),
+        Err(failure) => return failure.answer(&mut call),
     };
 
     let result = session

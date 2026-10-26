@@ -20,38 +20,54 @@ use super::{
 pub type BoxFut<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 /// Decodes the params, runs the endpoint and encodes the response body.
-pub type Handler<S> = for<'a> fn(&'a mut Session<S>, Call<'a>) -> BoxFut<'a, Vec<u8>>;
+pub type Handler<S> = for<'a> fn(&'a mut Session<S>, Call<'a>) -> BoxFut<'a, ()>;
 
 pub struct Call<'a> {
     pub format: Format,
-    pub id: &'a Id,
+    /// No answer is serialized for a notification.
+    pub id: Option<&'a Id>,
     pub params: Params<'a>,
+    pub body: &'a mut Vec<u8>,
 }
 
 impl Call<'_> {
-    pub fn fail(&self, code: i32, message: &str) -> Vec<u8> {
-        envelope::failure_plain(self.format, self.id, code, message)
+    pub fn fail(&mut self, code: i32, message: &str) {
+        if let Some(id) = self.id {
+            envelope::failure_into::<()>(self.format, id, code, message, None, self.body);
+        }
     }
 
-    pub fn fail_aux(&self, aux: &Aux) -> Vec<u8> {
-        let message = aux.to_string();
-        envelope::failure(self.format, self.id, aux_code(aux), &message, Some(aux))
+    pub fn fail_aux(&mut self, aux: &Aux) {
+        if let Some(id) = self.id {
+            envelope::failure_into(
+                self.format,
+                id,
+                aux_code(aux),
+                &aux.to_string(),
+                Some(aux),
+                self.body,
+            );
+        }
     }
 
     /// Encodes an endpoint's outcome: `result`, a domain error or an auxiliary one.
-    pub fn finish<O, E>(&self, response: Response<O, E>) -> Vec<u8>
+    pub fn finish<O, E>(&mut self, response: Response<O, E>)
     where
         O: Serialize,
         E: Serialize + fmt::Display,
     {
+        let Some(id) = self.id else {
+            return;
+        };
         match response {
-            Ok(ok) => envelope::success(self.format, self.id, &ok),
-            Err(Generic::Spec(err)) => envelope::failure(
+            Ok(ok) => envelope::success_into(self.format, id, &ok, self.body),
+            Err(Generic::Spec(err)) => envelope::failure_into(
                 self.format,
-                self.id,
+                id,
                 code::DOMAIN,
                 &err.to_string(),
                 Some(&err),
+                self.body,
             ),
             Err(Generic::Aux(aux)) => self.fail_aux(&aux),
         }
@@ -86,8 +102,8 @@ trait Endpoint<S: IsSession>: DeserializeOwned + Send + 'static {
 
 fn handle<'a, S: IsSession, E: Endpoint<S>>(
     session: &'a mut Session<S>,
-    call: Call<'a>,
-) -> BoxFut<'a, Vec<u8>> {
+    mut call: Call<'a>,
+) -> BoxFut<'a, ()> {
     Box::pin(async move {
         let args = match call.params.decode::<E>() {
             Ok(args) => args,
@@ -171,3 +187,40 @@ macro_rules! endpoints {
 }
 
 viendesu_core::for_each_endpoint!(endpoints);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct MustNotEncode;
+
+    impl Serialize for MustNotEncode {
+        fn serialize<S: serde::Serializer>(&self, _: S) -> Result<S::Ok, S::Error> {
+            panic!("notification result must not be serialized");
+        }
+    }
+
+    impl fmt::Display for MustNotEncode {
+        fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
+            panic!("notification error must not be formatted");
+        }
+    }
+
+    #[test]
+    fn notifications_do_not_encode_results_or_errors() {
+        for format in [Format::Json, Format::Msgpack] {
+            let mut body = Vec::new();
+            let mut call = Call {
+                format,
+                id: None,
+                params: Params::Absent,
+                body: &mut body,
+            };
+            call.finish::<_, MustNotEncode>(Ok(MustNotEncode));
+            call.finish::<MustNotEncode, _>(Err(Generic::Spec(MustNotEncode)));
+            call.finish::<MustNotEncode, MustNotEncode>(Err(Generic::Aux(Aux::Unauthenticated)));
+            call.fail(code::INVALID_PARAMS, "invalid params");
+            assert_eq!(body.capacity(), 0);
+        }
+    }
+}

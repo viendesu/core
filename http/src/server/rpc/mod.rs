@@ -98,10 +98,14 @@ enum SessionFailure {
 }
 
 impl SessionFailure {
-    fn answer(&self, call: &Call<'_>) -> Vec<u8> {
+    fn answer(&self, call: &mut Call<'_>) {
         match self {
             Self::Service(aux) => call.fail_aux(aux),
-            Self::Header(aux) => call.fail(code::INVALID_REQUEST, &aux.to_string()),
+            Self::Header(aux) => {
+                if call.id.is_some() {
+                    call.fail(code::INVALID_REQUEST, &aux.to_string());
+                }
+            }
         }
     }
 }
@@ -149,8 +153,11 @@ async fn dispatch<T: Types>(
     };
 
     let mut session = None;
-    let response = match message {
-        Message::Single(request) => run(&state, &headers, format, request, &mut session).await,
+    let mut body = Vec::new();
+    match message {
+        Message::Single(request) => {
+            run(&state, &headers, format, request, &mut session, &mut body).await;
+        }
         Message::Batch(requests) => {
             if state.batch_requires_auth {
                 if let Err(failure) =
@@ -160,22 +167,49 @@ async fn dispatch<T: Types>(
                 }
             }
 
-            let mut responses = Vec::with_capacity(requests.len());
-            for request in requests {
-                let response = match request {
-                    Ok(request) => run(&state, &headers, format, request, &mut session).await,
-                    Err(rejection) => Some(rejection.answer(format)),
-                };
-                responses.extend(response);
+            let responds = |request: &Result<Request<'_>, envelope::Rejection>| {
+                request
+                    .as_ref()
+                    .map_or(true, |request| request.id.is_some())
+            };
+            let count = requests.iter().filter(|request| responds(request)).count();
+            if count != 0 {
+                match format {
+                    Format::Json => body.push(b'['),
+                    Format::Msgpack => {
+                        let count = u32::try_from(count).expect("batch length fits u32");
+                        rmp::encode::write_array_len(&mut body, count)
+                            .expect("writing to a Vec cannot fail");
+                    }
+                }
             }
 
-            (!responses.is_empty()).then(|| envelope::batch(format, &responses))
+            let mut remaining = count;
+            for request in requests {
+                let responds = responds(&request);
+                match request {
+                    Ok(request) => {
+                        run(&state, &headers, format, request, &mut session, &mut body).await;
+                    }
+                    Err(rejection) => rejection.answer_into(format, &mut body),
+                }
+                if responds {
+                    remaining -= 1;
+                    if remaining != 0 && format == Format::Json {
+                        body.push(b',');
+                    }
+                }
+            }
+            if count != 0 && format == Format::Json {
+                body.push(b']');
+            }
         }
-    };
+    }
 
-    match response {
-        Some(body) => reply(format, body),
-        None => StatusCode::NO_CONTENT.into_response(),
+    if body.is_empty() {
+        StatusCode::NO_CONTENT.into_response()
+    } else {
+        reply(format, body)
     }
 }
 
@@ -187,65 +221,76 @@ async fn authenticate<T: Types>(
     format: Format,
     session: &mut Option<SessionResult<T>>,
 ) -> Result<(), Vec<u8>> {
-    let call = Call {
+    let mut body = Vec::new();
+    let mut call = Call {
         format,
-        id: &Id::Null,
+        id: Some(&Id::Null),
         params: Params::Absent,
+        body: &mut body,
     };
 
     match extract::session_token(headers) {
         Ok(Some(_)) => {}
         Ok(None) => {
-            return Err(call.fail(
+            call.fail(
                 code::UNAUTHENTICATED,
                 "batch requests require authentication",
-            ));
+            );
+            return Err(body);
         }
-        Err(aux) => return Err(SessionFailure::Header(aux).answer(&call)),
+        Err(aux) => {
+            SessionFailure::Header(aux).answer(&mut call);
+            return Err(body);
+        }
     }
 
     match session.insert(self::session::<T>(&state.service, headers).await) {
         Ok(_) => Ok(()),
-        Err(failure) => Err(failure.answer(&call)),
+        Err(failure) => {
+            failure.answer(&mut call);
+            Err(body)
+        }
     }
 }
 
-/// Calls the method in `session`, made on first need; `None` for a notification.
+/// Calls the method in `session`, made on first need, appending any answer to `body`.
 async fn run<T: Types>(
     state: &RpcState<T>,
     headers: &HeaderMap,
     format: Format,
     request: Request<'_>,
     session: &mut Option<SessionResult<T>>,
-) -> Option<Vec<u8>> {
-    let notification = request.id.is_none();
-    let id = request.id.unwrap_or(Id::Null);
+    body: &mut Vec<u8>,
+) {
+    let mut call = Call {
+        format,
+        id: request.id.as_ref(),
+        params: request.params,
+        body,
+    };
 
     let Some((&method, &handler)) = state.methods.get_key_value(&*request.method) else {
-        let message = format!("method {:?} not found", request.method);
-        return (!notification)
-            .then(|| envelope::failure_plain(format, &id, code::METHOD_NOT_FOUND, &message));
+        if call.id.is_some() {
+            call.fail(
+                code::METHOD_NOT_FOUND,
+                &format!("method {:?} not found", request.method),
+            );
+        }
+        return;
     };
 
-    let call = Call {
-        format,
-        id: &id,
-        params: request.params,
-    };
-    let response = async {
+    async {
         let session = match session {
             Some(session) => session,
             None => session.insert(self::session::<T>(&state.service, headers).await),
         };
         match session {
             Ok(session) => handler(session, call).await,
-            Err(failure) => failure.answer(&call),
+            Err(failure) => failure.answer(&mut call),
         }
     }
     .in_span(Span::enter_with_local_parent(method))
     .await;
-
-    (!notification).then_some(response)
 }
 
 fn reply(format: Format, body: Vec<u8>) -> Response {

@@ -166,14 +166,22 @@ impl Format {
                     eyre::bail!("trailing data after MessagePack");
                 }
 
-                // Borrowing reader: eva's `Date` only accepts borrowed strings.
-                let mut de = rmp_serde::Deserializer::from_read_ref(buf).with_human_readable();
-                de.set_max_depth(MAX_DEPTH);
-                serde_path_to_error::deserialize(&mut de)
-                    .wrap_err("failed to deserialize MessagePack")
+                load_validated_msgpack(buf)
             }
         }
     }
+}
+
+/// Decodes exactly one JSON-shaped MessagePack value already checked by
+/// [`msgpack_value_len`]. RPC params borrow a slice of a validated document.
+#[cfg(feature = "format-serde")]
+pub(crate) fn load_validated_msgpack<'de, T: serde::Deserialize<'de>>(
+    buf: &'de [u8],
+) -> eyre::Result<T> {
+    // Borrowing reader: eva's `Date` only accepts borrowed strings.
+    let mut de = rmp_serde::Deserializer::from_read_ref(buf).with_human_readable();
+    de.set_max_depth(MAX_DEPTH);
+    serde_path_to_error::deserialize(&mut de).wrap_err("failed to deserialize MessagePack")
 }
 
 /// Nesting limit of MessagePack documents, as serde_json's default.

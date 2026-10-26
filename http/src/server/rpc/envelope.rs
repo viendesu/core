@@ -9,7 +9,7 @@ use serde::{
 };
 use serde_json::value::RawValue;
 
-use crate::format::{DumpParams, Format, MsgpackError, msgpack_value_len};
+use crate::format::{DumpParams, Format, MsgpackError, load_validated_msgpack, msgpack_value_len};
 
 use super::code;
 
@@ -72,12 +72,12 @@ pub enum Params<'a> {
 }
 
 impl Params<'_> {
-    /// Decodes through [`Format::load`], the same path REST bodies take.
+    /// Decodes params without revalidating the enclosing MessagePack document.
     pub fn decode<T: DeserializeOwned>(&self) -> Result<T, String> {
         let result = match *self {
             Self::Absent => Format::Json.load(b"{}"),
             Self::Json(raw) => Format::Json.load(raw.get().as_bytes()),
-            Self::Msgpack(bytes) => Format::Msgpack.load(bytes),
+            Self::Msgpack(bytes) => load_validated_msgpack(bytes),
             Self::NotAnObject => return Err("invalid params: params must be an object".to_owned()),
         };
 
@@ -116,6 +116,10 @@ impl Rejection {
     pub fn answer(&self, format: Format) -> Vec<u8> {
         failure_plain(format, &Id::Null, self.code, &self.message)
     }
+
+    pub fn answer_into(&self, format: Format, body: &mut Vec<u8>) {
+        failure_into::<()>(format, &Id::Null, self.code, &self.message, None, body);
+    }
 }
 
 /// A request body: one request, or a batch whose elements are rejected one by one.
@@ -124,7 +128,7 @@ pub enum Message<'a> {
     Batch(Vec<Result<Request<'a>, Rejection>>),
 }
 
-/// A batch longer than `max_batch` is rejected before its elements are parsed.
+/// A batch longer than `max_batch` is rejected without dispatching any calls.
 pub fn parse(format: Format, body: &[u8], max_batch: usize) -> Result<Message<'_>, Rejection> {
     match format {
         Format::Json => parse_json(body, max_batch),
@@ -153,19 +157,55 @@ fn check_version(version: &str) -> Result<(), Rejection> {
 }
 
 fn parse_json(body: &[u8], max_batch: usize) -> Result<Message<'_>, Rejection> {
-    let raw: &RawValue = serde_json::from_slice(body).map_err(Rejection::parse)?;
-    if raw.get().as_bytes().first() != Some(&b'[') {
-        return json_request(raw).map(Message::Single);
+    // Unknown envelope fields are skipped by serde, including their strings.
+    // Validate UTF-8 once so malformed bytes in those fields are still rejected.
+    let body = std::str::from_utf8(body).map_err(Rejection::parse)?;
+    if json_start(body) != Some(b'[') {
+        return json_request(body)
+            .map(Message::Single)
+            .or_else(|rejection| {
+                // An envelope error can stop before malformed JSON later in the body.
+                // Validate only rejected requests to preserve parse-error precedence.
+                serde_json::from_str::<&RawValue>(body).map_err(Rejection::parse)?;
+                Err(rejection)
+            });
     }
 
-    let elements: Vec<&RawValue> = serde_json::from_str(raw.get()).map_err(Rejection::parse)?;
-    check_batch_len(elements.len(), max_batch)?;
-    Ok(Message::Batch(
-        elements.into_iter().map(json_request).collect(),
-    ))
+    struct Batch(usize);
+
+    impl<'de> de::Visitor<'de> for Batch {
+        type Value = Result<Message<'de>, Rejection>;
+
+        fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            f.write_str("an array of requests")
+        }
+
+        fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+            let mut requests = Vec::new();
+            let mut count = 0;
+            while let Some(raw) = seq.next_element::<&RawValue>()? {
+                count += 1;
+                if count <= self.0 {
+                    requests.push(json_request(raw.get()));
+                }
+            }
+            Ok(check_batch_len(count, self.0).map(|()| Message::Batch(requests)))
+        }
+    }
+
+    let mut de = serde_json::Deserializer::from_str(body);
+    let message = (&mut de)
+        .deserialize_seq(Batch(max_batch))
+        .map_err(Rejection::parse)?;
+    de.end().map_err(Rejection::parse)?;
+    message
 }
 
-fn json_request(raw: &RawValue) -> Result<Request<'_>, Rejection> {
+fn json_start(body: &str) -> Option<u8> {
+    body.bytes().find(|b| !b.is_ascii_whitespace())
+}
+
+fn json_request(body: &str) -> Result<Request<'_>, Rejection> {
     #[derive(Deserialize)]
     struct Envelope<'a> {
         #[serde(borrow)]
@@ -182,11 +222,11 @@ fn json_request(raw: &RawValue) -> Result<Request<'_>, Rejection> {
         Id::deserialize(deserializer).map(Some)
     }
 
-    if raw.get().as_bytes().first() != Some(&b'{') {
+    if json_start(body) != Some(b'{') {
         return Err(Rejection::invalid("request must be an object"));
     }
 
-    let envelope: Envelope<'_> = serde_json::from_str(raw.get()).map_err(Rejection::invalid)?;
+    let envelope: Envelope<'_> = serde_json::from_str(body).map_err(Rejection::invalid)?;
     check_version(&envelope.jsonrpc)?;
 
     let params = match envelope.params {
@@ -334,32 +374,35 @@ struct ErrorObject<'a, D: ?Sized> {
     data: Option<&'a D>,
 }
 
-fn dump<T: Serialize + ?Sized>(format: Format, what: &T) -> Vec<u8> {
-    let mut body = Vec::with_capacity(128);
-    format.dump(DumpParams::default(), what, &mut body);
-    body
-}
-
-pub fn success<T: Serialize + ?Sized>(format: Format, id: &Id, result: &T) -> Vec<u8> {
-    dump(
-        format,
+pub fn success_into<T: Serialize + ?Sized>(
+    format: Format,
+    id: &Id,
+    result: &T,
+    body: &mut Vec<u8>,
+) {
+    body.reserve(128);
+    format.dump(
+        DumpParams::default(),
         &Success {
             jsonrpc: "2.0",
             id,
             result,
         },
+        body,
     )
 }
 
-pub fn failure<D: Serialize + ?Sized>(
+pub fn failure_into<D: Serialize + ?Sized>(
     format: Format,
     id: &Id,
     code: i32,
     message: &str,
     data: Option<&D>,
-) -> Vec<u8> {
-    dump(
-        format,
+    body: &mut Vec<u8>,
+) {
+    body.reserve(128);
+    format.dump(
+        DumpParams::default(),
         &Failure {
             jsonrpc: "2.0",
             id,
@@ -369,37 +412,12 @@ pub fn failure<D: Serialize + ?Sized>(
                 data,
             },
         },
+        body,
     )
 }
 
 pub fn failure_plain(format: Format, id: &Id, code: i32, message: &str) -> Vec<u8> {
-    failure::<()>(format, id, code, message, None)
-}
-
-/// Joins encoded responses into a batch response without re-encoding them.
-pub fn batch(format: Format, responses: &[Vec<u8>]) -> Vec<u8> {
-    let payload: usize = responses.iter().map(Vec::len).sum();
-    let mut body = Vec::with_capacity(payload + responses.len() + 5);
-
-    match format {
-        Format::Json => {
-            body.push(b'[');
-            for (i, response) in responses.iter().enumerate() {
-                if i != 0 {
-                    body.push(b',');
-                }
-                body.extend_from_slice(response);
-            }
-            body.push(b']');
-        }
-        Format::Msgpack => {
-            let len = u32::try_from(responses.len()).expect("batch length fits u32");
-            rmp::encode::write_array_len(&mut body, len).expect("writing to a Vec cannot fail");
-            for response in responses {
-                body.extend_from_slice(response);
-            }
-        }
-    }
-
+    let mut body = Vec::new();
+    failure_into::<()>(format, id, code, message, None, &mut body);
     body
 }
