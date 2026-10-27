@@ -132,49 +132,41 @@ impl CallStep<finish::Args> for Finish {
     }
 }
 
-macro_rules! mock_method {
-    ([stream $($flag:ident)*] $segment:ident $method:ident $endpoint:ident $Args:ty, $Output:ty) => {
-        fn $method(&mut self) -> impl CallStep<$Args, Output = $Output> {
-            Finish { mock: self.clone() }
-        }
-    };
-    ([$skip:ident $($flag:ident)*] $($rest:tt)*) => {
-        mock_method!([$($flag)*] $($rest)*);
-    };
-    ([] $segment:ident $method:ident $endpoint:ident $Args:ty, $Output:ty) => {
-        fn $method(&mut self) -> impl CallStep<$Args, Output = $Output> {
-            Step {
-                mock: self.clone(),
-                method: concat!(stringify!($segment), ".", stringify!($endpoint)),
-                _types: PhantomData,
-            }
-        }
-    };
-}
-
 macro_rules! mock_domains {
     ($(
-        $segment:ident {$(
-            $accessor:ident : $Trait:ident {
-                trait: $TraitPath:path,
-                client: $Client:path,
-                $(
-                $(#[$flag:ident])*
-                $method:ident = $endpoint:ident {
+        $accessor:ident {
+            trait: $Trait:path,
+            client: $Client:path,
+            methods: {$(
+                $method:ident {
+                    flags: [$($flag:ident),*],
+                    lifetimes: [$($lt:lifetime),*],
                     args: $Args:ty,
                     ok: $Ok:ty,
                     err: $Err:ty,
                     output: $Output:ty,
                     docs: [$($doc:literal),*],
+                    $($method_extra:tt)*
+                }
+            )*},
+            $($extra:tt)*
+        }
+    )*) => {
+        $(
+            impl $Trait for Mock {$(
+                fn $method(&mut self) -> impl CallStep<$Args, Output = $Output> {
+                    eva::if_flag!(stream in [$($flag),*] {
+                        Finish { mock: self.clone() }
+                    } else {
+                        Step {
+                            mock: self.clone(),
+                            method: concat!(stringify!($accessor), ".", stringify!($method)),
+                            _types: PhantomData,
+                        }
+                    })
                 }
             )*}
-        )*}
-    )*) => {
-        $($(
-            impl $TraitPath for Mock {
-                $( mock_method!([$($flag)*] $segment $method $endpoint $Args, $Output); )*
-            }
-        )*)*
+        )*
     };
 }
 

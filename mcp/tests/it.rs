@@ -60,35 +60,37 @@ macro_rules! reply {
     (tags list) => {
         ListTags
     };
-    ($segment:ident $endpoint:ident) => {
+    ($accessor:ident $method:ident) => {
         fail()
     };
 }
 
 macro_rules! mock {
     ($(
-        $segment:ident {$(
-            $accessor:ident : $Trait:ident {
-                trait: $TraitPath:path,
-                client: $Client:path,
-                $(
-                $(#[$flag:ident])*
-                $method:ident = $endpoint:ident {
+        $accessor:ident {
+            trait: $Trait:path,
+            client: $Client:path,
+            methods: {$(
+                $method:ident {
+                    flags: [$($flag:ident),*],
+                    lifetimes: [$($lt:lifetime),*],
                     args: $Args:ty,
                     ok: $Ok:ty,
                     err: $Err:ty,
                     output: $Output:ty,
                     docs: [$($doc:literal),*],
+                    $($method_extra:tt)*
                 }
-            )*}
-        )*}
-    )*) => {$($(
-        impl $TraitPath for Mock {$(
+            )*},
+            $($extra:tt)*
+        }
+    )*) => {$(
+        impl $Trait for Mock {$(
             fn $method(&mut self) -> impl CallStep<$Args, Output = $Output> {
-                reply!($segment $endpoint)
+                reply!($accessor $method)
             }
         )*}
-    )*)*};
+    )*};
 }
 
 struct Mock;

@@ -114,73 +114,59 @@ fn handle<'a, S: IsSession, E: Endpoint<S>>(
     })
 }
 
-/// Streaming endpoints have no serde form; other flags do not matter here.
-macro_rules! endpoint {
-    ([stream $($flag:ident)*] $($rest:tt)*) => {};
-    ([$skip:ident $($flag:ident)*] $($rest:tt)*) => {
-        endpoint!([$($flag)*] $($rest)*);
-    };
-    ([] $segment:ident $accessor:ident [$TraitPath:path] $method:ident $endpoint:ident $Args:ty, $Ok:ty, $Err:ty) => {
-        impl<S: IsSession> Endpoint<S> for $Args {
-            const METHOD: &'static str = concat!(stringify!($segment), ".", stringify!($endpoint));
-
-            type Ok = $Ok;
-            type Err = $Err;
-
-            fn call(
-                session: &mut Session<S>,
-                args: Self,
-            ) -> impl Future<Output = Response<Self::Ok, Self::Err>> + Send {
-                use eva::handling::CallStep as _;
-use $TraitPath as _;
-
-                async move { session.$accessor().inner_mut().$method().call(args).await }
-            }
-        }
-    };
-}
-
-macro_rules! register {
-    ($table:ident [stream $($flag:ident)*] $($rest:tt)*) => {};
-    ($table:ident [$skip:ident $($flag:ident)*] $($rest:tt)*) => {
-        register!($table [$($flag)*] $($rest)*);
-    };
-    ($table:ident [] $Args:ty) => {
-        $table.insert(
-            <$Args as Endpoint<S>>::METHOD,
-            handle::<S, $Args> as Handler<S>,
-        );
-    };
-}
-
+/// Streaming endpoints have no serde form.
 macro_rules! endpoints {
     ($(
-        $segment:ident {$(
-            $accessor:ident : $Trait:ident {
-                trait: $TraitPath:path,
-                client: $Client:path,
-                $(
-                $(#[$flag:ident])*
-                $method:ident = $endpoint:ident {
+        $accessor:ident {
+            trait: $Trait:path,
+            client: $Client:path,
+            methods: {$(
+                $method:ident {
+                    flags: [$($flag:ident),*],
+                    lifetimes: [$($lt:lifetime),*],
                     args: $Args:ty,
                     ok: $Ok:ty,
                     err: $Err:ty,
                     output: $Output:ty,
                     docs: [$($doc:literal),*],
+                    $($method_extra:tt)*
                 }
-            )*}
-        )*}
+            )*},
+            $($extra:tt)*
+        }
     )*) => {
-        $($($(
-            endpoint!([$($flag)*] $segment $accessor [$TraitPath] $method $endpoint $Args, $Ok, $Err);
-        )*)*)*
+        $($(
+            eva::if_flag!(stream in [$($flag),*] {} else {
+                impl<S: IsSession> Endpoint<S> for $Args {
+                    const METHOD: &'static str = concat!(stringify!($accessor), ".", stringify!($method));
 
-        /// Every serde endpoint of the service, keyed by `<segment>.<endpoint>`.
+                    type Ok = $Ok;
+                    type Err = $Err;
+
+                    fn call(
+                        session: &mut Session<S>,
+                        args: Self,
+                    ) -> impl Future<Output = Response<Self::Ok, Self::Err>> + Send {
+                        use eva::handling::CallStep as _;
+                        use $Trait as _;
+
+                        async move { session.$accessor().inner_mut().$method().call(args).await }
+                    }
+                }
+            });
+        )*)*
+
+        /// Every serde endpoint of the service, keyed by `<accessor>.<method>`.
         pub fn table<S: IsSession>() -> HashMap<&'static str, Handler<S>> {
             let mut table = HashMap::new();
-            $($($(
-                register!(table [$($flag)*] $Args);
-            )*)*)*
+            $($(
+                eva::if_flag!(stream in [$($flag),*] {} else {
+                    table.insert(
+                        <$Args as Endpoint<S>>::METHOD,
+                        handle::<S, $Args> as Handler<S>,
+                    );
+                });
+            )*)*
             table
         }
     };

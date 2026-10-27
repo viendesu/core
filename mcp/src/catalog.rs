@@ -90,34 +90,28 @@ pub fn select<S: IsSession + 'static>(mut keep: impl FnMut(&Endpoint) -> bool) -
     let mut tools = Tools::new();
 
     // Streaming endpoints have no JSON form, so they cannot be tools.
-    macro_rules! unless_stream {
-        ([stream $($rest:ident)*] $($body:tt)*) => {};
-        ([$head:ident $($rest:ident)*] $($body:tt)*) => {
-            unless_stream!([$($rest)*] $($body)*);
-        };
-        ([] $($body:tt)*) => { $($body)* };
-    }
-
     macro_rules! register {
         ($(
-            $segment:ident {$(
-                $accessor:ident : $Trait:ident {
-                    trait: $TraitPath:path,
-                    client: $Client:path,
-                    $(
-                    $(#[$flag:ident])*
-                    $method:ident = $endpoint:ident {
+            $accessor:ident {
+                trait: $Trait:path,
+                client: $Client:path,
+                methods: {$(
+                    $method:ident {
+                        flags: [$($flag:ident),*],
+                        lifetimes: [$($lt:lifetime),*],
                         args: $Args:ty,
                         ok: $Ok:ty,
                         err: $Err:ty,
                         output: $Output:ty,
                         docs: [$($doc:literal),*],
+                        $($method_extra:tt)*
                     }
-                )*}
-            )*}
-        )*) => {$($($(
-            unless_stream!([$($flag)*] {
-                use $TraitPath as _;
+                )*},
+                $($extra:tt)*
+            }
+        )*) => {$($(
+            eva::if_flag!(stream in [$($flag),*] {} else {{
+                use $Trait as _;
 
                 let name = concat!(stringify!($accessor), "_", stringify!($method));
                 let endpoint = Endpoint {
@@ -134,8 +128,8 @@ pub fn select<S: IsSession + 'static>(mut keep: impl FnMut(&Endpoint) -> bool) -
                         },
                     );
                 }
-            });
-        )*)*)*};
+            }});
+        )*)*};
     }
 
     viendesu_core::for_each_endpoint!(register);

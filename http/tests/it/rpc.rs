@@ -274,28 +274,30 @@ async fn unknown_methods() {
 async fn every_serde_endpoint_is_routed() {
     macro_rules! methods {
         ($(
-            $segment:ident {$(
-                $accessor:ident : $Trait:ident {
-                    trait: $TraitPath:path,
-                    client: $Client:path,
-                    $(
-                    $(#[$flag:ident])*
-                    $method:ident = $endpoint:ident {
+            $accessor:ident {
+                trait: $Trait:path,
+                client: $Client:path,
+                methods: {$(
+                    $method:ident {
+                        flags: [$($flag:ident),*],
+                        lifetimes: [$($lt:lifetime),*],
                         args: $Args:ty,
                         ok: $Ok:ty,
                         err: $Err:ty,
                         output: $Output:ty,
                         docs: [$($doc:literal),*],
+                        $($method_extra:tt)*
                     }
-                )*}
-            )*}
+                )*},
+                $($extra:tt)*
+            }
         )*) => {
-            [$($($(
+            [$($(
                 (
-                    concat!(stringify!($segment), ".", stringify!($endpoint)),
-                    stringify!($($flag)*).contains("stream"),
+                    concat!(stringify!($accessor), ".", stringify!($method)),
+                    eva::if_flag!(stream in [$($flag),*] { true } else { false }),
                 ),
-            )*)*)*]
+            )*)*]
         };
     }
 

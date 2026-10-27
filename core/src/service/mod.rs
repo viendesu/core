@@ -8,7 +8,7 @@ use crate::protocol::requests::{
 
 pub mod authz;
 
-#[export]
+#[export(flags(write, stream))]
 #[derive(Debug, Clone, Copy)]
 pub struct Session {
     users: Users,
