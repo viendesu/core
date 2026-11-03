@@ -11,7 +11,7 @@ members = [
 resolver = "3"
 
 [workspace.dependencies]
-eva = { path = "../eva" }
+eva = { git = "ssh://git@github.com/nerodono/eva.git" }
 
 futures = "0.3.31"
 tokio = "1.44.2"

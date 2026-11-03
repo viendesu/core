@@ -1,6 +1,6 @@
 {
   inputs = {
-    eva.url = "git+https://git.desu.church/VienDesu/eva.git";
+    eva.url = "git+ssh://git@github.com/nerodono/eva.git";
     flake-utils.follows = "eva/flake-utils";
   };
 
