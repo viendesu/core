@@ -15,8 +15,8 @@ pub trait Tabs {
     #[errors(errors::users::NotFound)]
     fn list(
         user: user::Id,
-    ) -> ok! {
-        tabs: Vec<this![Tab]>,
+    ) -> Struct! {
+        tabs: Vec<this::Tab>,
     };
     embed! {
         #[data]
@@ -32,9 +32,21 @@ pub trait Tabs {
         tab: tab::Id,
         user: user::Id,
         start_from: Option<entity::Id>,
-        #[serde(default)] limit: this![Limit],
+        #[serde(default)] limit: this::Limit,
         #[serde(default)] resolve_marks: bool,
-    ) -> this![Value];
+    ) -> Enum! {
+        Games {
+            items: Vec<tab::TabItem<game::Game>>,
+            #[serde(default)]
+            marks: game::Marks,
+            authors: HashMap<author::Id, author::Mini>,
+            users: HashMap<user::Id, user::Mini>,
+        },
+        Authors {
+            items: Vec<tab::TabItem<author::Author>>,
+            users: HashMap<user::Id, user::Mini>,
+        },
+    };
     embed! {
         #[int(u8, 1..=64)]
         pub enum Limit {}
@@ -43,21 +55,6 @@ pub trait Tabs {
             fn default() -> Self {
                 Self::POS16
             }
-        }
-
-        #[data]
-        pub enum Value {
-            Games {
-                items: Vec<tab::TabItem<game::Game>>,
-                #[serde(default)]
-                marks: game::Marks,
-                authors: HashMap<author::Id, author::Mini>,
-                users: HashMap<user::Id, user::Mini>,
-            },
-            Authors {
-                items: Vec<tab::TabItem<author::Author>>,
-                users: HashMap<user::Id, user::Mini>,
-            },
         }
     }
 

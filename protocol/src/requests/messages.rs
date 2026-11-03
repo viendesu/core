@@ -25,7 +25,7 @@ pub trait Messages {
     fn post(
         thread: thread::Selector,
         text: message::Text,
-    ) -> ok! {
+    ) -> Struct! {
         id: message::Id,
     };
 
@@ -33,7 +33,7 @@ pub trait Messages {
     #[errors(errors::messages::NotFound)]
     fn get(
         message: message::Selector,
-    ) -> ok! {
+    ) -> Struct! {
         message: message::Message,
     };
 }

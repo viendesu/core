@@ -16,9 +16,9 @@ pub trait Users {
     /// Searches users by text query, paginated via `start_from`.
     fn search(
         query: Option<CompactString>,
-        #[serde(default)] limit: this![Limit],
+        #[serde(default)] limit: this::Limit,
         start_from: Option<user::Id>,
-    ) -> ok! {
+    ) -> Struct! {
         found: Vec<user::User>,
     };
     embed! {
@@ -39,7 +39,7 @@ pub trait Users {
     #[flags(write)]
     fn begin_auth(
         method: user::AuthoredAuth,
-    ) -> ok! {
+    ) -> Struct! {
         auth_session: user::AuthSessionId,
     };
 
@@ -48,13 +48,13 @@ pub trait Users {
     #[errors(errors::users::NoSuchAuthSession)]
     fn finish_auth(
         auth_session: user::AuthSessionId,
-    ) -> ok! {
+    ) -> Struct! {
         session: session::Token,
         method: user::AuthoredAuth,
     };
 
     /// Id and role of the caller.
-    fn check_auth() -> ok! {
+    fn check_auth() -> Struct! {
         #![data(copy)]
 
         user: user::Id,
@@ -71,7 +71,7 @@ pub trait Users {
         errors::files::UnexpectedFileClass,
         errors::users::AlreadyTaken
     )]
-    fn update(user: Option<user::Selector>, update: this![Update]) -> True;
+    fn update(user: Option<user::Selector>, update: this::Update) -> True;
     embed! {
         #[serde_with::apply(Patch => #[serde(default)])]
         #[data]
@@ -91,7 +91,7 @@ pub trait Users {
     #[errors(errors::users::NotFound)]
     fn get(
         user: Option<user::Selector>,
-    ) -> ok! {
+    ) -> Struct! {
         user: user::User,
     };
 
@@ -110,7 +110,7 @@ pub trait Users {
     fn sign_in(
         nickname: user::Nickname,
         password: user::Password,
-    ) -> ok! {
+    ) -> Struct! {
         token: session::Token,
         expires_at: Timestamp,
     };
@@ -123,7 +123,7 @@ pub trait Users {
         email: user::Email,
         display_name: Option<user::DisplayName>,
         password: user::Password,
-    ) -> ok! {
+    ) -> Struct! {
         id: user::Id,
     };
 }

@@ -13,9 +13,9 @@ pub trait Articles {
     #[errors(NoSuchBlog(errors::blogs::NotFound))]
     fn search(
         blog: blog::Id,
-        #[serde(default)] limit: this![Limit],
+        #[serde(default)] limit: this::Limit,
         before: Option<article::Id>,
-    ) -> ok! {
+    ) -> Struct! {
         #![doc = " Results are ordered newest first."]
 
         results: Vec<article::Brief>,
@@ -39,7 +39,7 @@ pub trait Articles {
         /// else is `NotFound`.
         #[serde(default)]
         blog: Option<blog::Selector>,
-    ) -> ok! {
+    ) -> Struct! {
         article: article::Article,
     };
 
@@ -50,7 +50,7 @@ pub trait Articles {
         blog: blog::Id,
         title: article::Title,
         content: article::Content,
-    ) -> ok! {
+    ) -> Struct! {
         id: article::Id,
     };
 

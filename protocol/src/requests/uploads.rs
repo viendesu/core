@@ -27,11 +27,11 @@ pub trait Uploads {
         /// Hash of the file. If specified - verify hashes when finishing.
         hash: Option<file::Hash>,
         /// Class of the file.
-        class: this![FileClass],
+        class: this::FileClass,
         /// Size of the file to upload. Must be known
         /// prior to upload, streaming is not supported.
         size: NonZeroU64,
-    ) -> ok! {
+    ) -> Struct! {
         upload: upload::Id,
     };
     embed! {
@@ -72,7 +72,7 @@ pub trait Uploads {
     fn finish(
         id: upload::Id,
         stream: UploadStream<'static>,
-    ) -> ok! {
+    ) -> Struct! {
         file: file::Id,
     };
 
@@ -83,7 +83,7 @@ pub trait Uploads {
 
     /// Lists the caller's unfinished uploads.
     #[error(errors::Impossible)]
-    fn list_pending() -> ok! {
+    fn list_pending() -> Struct! {
         uploads: Vec<upload::Upload>,
     };
 }

@@ -25,7 +25,7 @@ pub trait Comments {
         /// comment's current like count is used instead.
         before_likes: Option<comment::Likes>,
         #[serde(default)] limit: comment::Limit,
-    ) -> ok! {
+    ) -> Struct! {
         #![doc = " Top-level comments only; fetch replies via `replies`."]
 
         comments: Vec<comment::Comment>,
@@ -39,7 +39,7 @@ pub trait Comments {
         /// Exclusive cursor: the last reply of the previous page.
         after: Option<comment::Id>,
         #[serde(default)] limit: comment::Limit,
-    ) -> ok! {
+    ) -> Struct! {
         #![doc = " Results are ordered oldest first."]
 
         comments: Vec<comment::Comment>,
@@ -59,7 +59,7 @@ pub trait Comments {
         /// Reply to this top-level comment; threads are one level deep.
         #[serde(default)]
         parent: Option<comment::Id>,
-    ) -> ok! {
+    ) -> Struct! {
         id: comment::Id,
     };
 
@@ -83,7 +83,7 @@ pub trait Comments {
         comment: comment::Id,
         /// `false` retracts the caller's like.
         liked: bool,
-    ) -> ok! {
+    ) -> Struct! {
         /// Like count after the operation.
         likes: comment::Likes,
     };

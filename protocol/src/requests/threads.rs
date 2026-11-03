@@ -11,9 +11,9 @@ use crate::{
 pub trait Threads {
     /// Lists threads, paginated via `after`.
     fn search(
-        #[serde(default)] limit: this![Limit],
+        #[serde(default)] limit: this::Limit,
         after: Option<thread::Id>,
-    ) -> ok! {
+    ) -> Struct! {
         results: Vec<thread::Thread>,
     };
     embed! {
@@ -42,7 +42,7 @@ pub trait Threads {
     #[errors(errors::threads::NotFound)]
     fn get(
         thread: thread::Selector,
-    ) -> ok! {
+    ) -> Struct! {
         thread: thread::Thread,
     };
 
@@ -52,7 +52,7 @@ pub trait Threads {
     fn create(
         board: board::Selector,
         initial_message: message::Text,
-    ) -> ok! {
+    ) -> Struct! {
         id: thread::Id,
     };
 }

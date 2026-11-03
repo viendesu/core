@@ -9,7 +9,7 @@ pub trait Badges {
     /// Lists badges matching the query, all without one.
     fn list(
         query: Option<str::CompactString>,
-    ) -> ok! {
+    ) -> Struct! {
         badges: Vec<mark::TextEntry<mark::Badge>>,
     };
 
@@ -17,7 +17,7 @@ pub trait Badges {
     #[flags(write)]
     fn add(
         badge: str::CompactString,
-    ) -> ok! {
+    ) -> Struct! {
         id: mark::Badge,
     };
 }

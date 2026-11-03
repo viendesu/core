@@ -19,8 +19,8 @@ pub trait Authors {
         query: CompactString,
         owned_by: Option<user::Selector>,
         start_from: Option<author::Id>,
-        limit: Option<this![Limit]>,
-    ) -> ok! {
+        limit: Option<this::Limit>,
+    ) -> Struct! {
         authors: Vec<author::Author>,
         users: HashMap<user::Id, user::Mini>,
     };
@@ -47,7 +47,7 @@ pub trait Authors {
         /// Who to update.
         author: author::Selector,
         /// Specific update to apply.
-        update: this![Update],
+        update: this::Update,
     ) -> True;
     embed! {
         #[serde_with::apply(Patch => #[serde(default)])]
@@ -65,7 +65,7 @@ pub trait Authors {
     #[errors(errors::authors::NotFound)]
     fn get(
         author: author::Selector,
-    ) -> ok! {
+    ) -> Struct! {
         author: author::Author,
         users: HashMap<user::Id, user::Mini>,
     };
@@ -88,7 +88,7 @@ pub trait Authors {
         /// authors for different user than currently authenticated
         /// requires at least `admin` role.
         owner: Option<user::Id>,
-    ) -> ok! {
+    ) -> Struct! {
         id: author::Id,
     };
 }

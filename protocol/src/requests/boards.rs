@@ -30,7 +30,7 @@ pub trait Boards {
         slug: board::Slug,
         initial_message: message::Text,
         by: Option<message::ById>,
-    ) -> ok! {
+    ) -> Struct! {
         id: board::Id,
     };
 
@@ -38,7 +38,7 @@ pub trait Boards {
     #[errors(errors::boards::NotFound)]
     fn get(
         board: board::Selector,
-    ) -> ok! {
+    ) -> Struct! {
         board: board::Board,
     };
 }

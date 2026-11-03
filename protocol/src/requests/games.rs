@@ -18,7 +18,7 @@ pub trait Games {
         id: game::Id,
         /// `None` retracts the caller's vote.
         rating: Option<game::RatingValue>,
-    ) -> ok! {
+    ) -> Struct! {
         /// Rating of the game after the vote.
         rating: game::MeanRating,
     };
@@ -37,7 +37,7 @@ pub trait Games {
         errors::games::BadRelation,
         errors::games::TooManyRelations
     )]
-    fn update(id: game::Id, update: this![Update]) -> True;
+    fn update(id: game::Id, update: this::Update) -> True;
     embed! {
         #[serde_with::apply(Patch => #[serde(default)])]
         #[data]
@@ -67,13 +67,13 @@ pub trait Games {
     fn search(
         query: Option<game::SearchQuery>,
         author: Option<author::Selector>,
-        #[serde(default)] include: this![Marks],
-        #[serde(default)] exclude: this![Marks],
-        #[serde(default)] order: this![Order],
-        #[serde(default)] sort_by: this![SortBy],
-        limit: Option<this![Limit]>,
+        #[serde(default)] include: this::Marks,
+        #[serde(default)] exclude: this::Marks,
+        #[serde(default)] order: this::Order,
+        #[serde(default)] sort_by: this::SortBy,
+        limit: Option<this::Limit>,
         #[serde(default)] resolve_marks: bool,
-    ) -> ok! {
+    ) -> Struct! {
         found: Vec<game::Game>,
         /// Tag and badge names of the found games; empty unless requested
         /// via `resolve_marks`.
@@ -181,7 +181,7 @@ pub trait Games {
         slug: Option<game::Slug>,
         vndb: Option<game::VndbId>,
         release_date: Option<game::ReleaseDate>,
-    ) -> ok! {
+    ) -> Struct! {
         id: game::Id,
     };
 
@@ -199,7 +199,7 @@ pub trait Games {
         /// Also fetch the related games.
         #[serde(default)]
         related: bool,
-    ) -> ok! {
+    ) -> Struct! {
         game: game::Game,
         /// The caller's own rating of the game, if any.
         #[serde(default, skip_serializing_if = "Option::is_none")]

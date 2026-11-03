@@ -7,8 +7,8 @@ use crate::types::mark;
 #[service(result = Response)]
 pub trait Genres {
     /// Lists all genres.
-    fn list() -> ok! {
-        genres: array::ImmutableHeap<mark::Genre, { this![MAX] }>,
+    fn list() -> Struct! {
+        genres: array::ImmutableHeap<mark::Genre, { this::MAX }>,
     };
     embed! {
         pub const MAX: usize = 256;

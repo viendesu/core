@@ -8,8 +8,8 @@ use crate::types::mark;
 pub trait Tags {
     /// Gets tags by id, at most 16; unknown ids are skipped.
     fn get_many(
-        ids: array::ImmutableHeap<mark::Tag, { this![MAX] }>,
-    ) -> ok! {
+        ids: array::ImmutableHeap<mark::Tag, { this::MAX }>,
+    ) -> Struct! {
         tags: Vec<mark::TextEntry<mark::Tag>>,
     };
     embed! {
@@ -19,7 +19,7 @@ pub trait Tags {
     /// Lists tags matching the query, all without one.
     fn list(
         query: Option<str::CompactString>,
-    ) -> ok! {
+    ) -> Struct! {
         tags: Vec<mark::TextEntry<mark::Tag>>,
     };
 
@@ -27,7 +27,7 @@ pub trait Tags {
     #[flags(write)]
     fn add(
         tag: str::CompactString,
-    ) -> ok! {
+    ) -> Struct! {
         id: mark::Tag,
     };
 }

@@ -21,7 +21,7 @@ pub trait Blogs {
     )]
     fn get(
         blog: blog::Selector,
-    ) -> ok! {
+    ) -> Struct! {
         blog: blog::Blog,
         owner: blog::Owner,
     };
