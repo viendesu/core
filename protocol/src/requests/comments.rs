@@ -26,7 +26,7 @@ pub trait Comments {
         before_likes: Option<comment::Likes>,
         #[serde(default)] limit: comment::Limit,
     ) -> Struct! {
-        #![doc = " Top-level comments only; fetch replies via `replies`."]
+        //! Top-level comments only; fetch replies via `replies`.
 
         comments: Vec<comment::Comment>,
         users: HashMap<user::Id, user::Mini>,
@@ -40,7 +40,7 @@ pub trait Comments {
         after: Option<comment::Id>,
         #[serde(default)] limit: comment::Limit,
     ) -> Struct! {
-        #![doc = " Results are ordered oldest first."]
+        //! Results are ordered oldest first.
 
         comments: Vec<comment::Comment>,
         users: HashMap<user::Id, user::Mini>,

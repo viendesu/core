@@ -16,7 +16,7 @@ pub trait Articles {
         #[serde(default)] limit: this::Limit,
         before: Option<article::Id>,
     ) -> Struct! {
-        #![doc = " Results are ordered newest first."]
+        //! Results are ordered newest first.
 
         results: Vec<article::Brief>,
     };
