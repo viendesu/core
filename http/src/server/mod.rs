@@ -1,7 +1,7 @@
-use eva::{
-    component_configs::ComponentConfig,
+use eva::rt::{
+    cfg::ComponentConfig,
+    components::{Command, SlaveRx},
     logging as log,
-    supervisor::{Command, SlaveRx},
 };
 
 use eyre::Context;
@@ -56,7 +56,7 @@ pub async fn serve(
 }
 
 async fn shutdown_requested(mut rx: SlaveRx) {
-    // A closed channel means the supervisor is gone, so stop as well.
+    // A closed channel means the component manager is gone, so stop as well.
     match rx.recv().await {
         Some(Command::Shutdown) | None => {}
     }

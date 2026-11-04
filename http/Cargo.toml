@@ -11,7 +11,7 @@ server = [
     "dep:tower-http",
     "dep:fastrace",
     "dep:futures",
-    "eva/tokio",
+    "eva/rt",
     "tokio/net",
     "dep:fastrace-axum"
 ]

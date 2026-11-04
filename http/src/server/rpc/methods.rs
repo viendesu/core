@@ -147,7 +147,7 @@ macro_rules! endpoints {
                         session: &mut Session<S>,
                         args: Self,
                     ) -> impl Future<Output = Response<Self::Ok, Self::Err>> + Send {
-                        use eva::handling::CallStep as _;
+                        use eva::handlers::CallStep as _;
                         use $Trait as _;
 
                         async move { session.$accessor().inner_mut().$method().call(args).await }
