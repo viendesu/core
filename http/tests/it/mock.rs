@@ -132,45 +132,21 @@ impl CallStep<finish::Args> for Finish {
     }
 }
 
+#[eva::implement(viendesu_core::for_each_endpoint, Mock)]
+#[extra(flags)]
 macro_rules! mock_domains {
-    ($(
-        $accessor:ident {
-            trait: $Trait:path,
-            client: $Client:path,
-            methods: {$(
-                $method:ident {
-                    flags: [$($flag:ident),*],
-                    lifetimes: [$($lt:lifetime),*],
-                    args: $Args:ty,
-                    ok: $Ok:ty,
-                    err: $Err:ty,
-                    output: $Output:ty,
-                    docs: [$($doc:literal),*],
-                    $($method_extra:tt)*
-                }
-            )*},
-            $($extra:tt)*
-        }
-    )*) => {
-        $(
-            impl $Trait for Mock {$(
-                fn $method(&mut self) -> impl CallStep<$Args, Output = $Output> {
-                    eva::if_flag!(stream in [$($flag),*] {
-                        Finish { mock: self.clone() }
-                    } else {
-                        Step {
-                            mock: self.clone(),
-                            method: concat!(stringify!($accessor), ".", stringify!($method)),
-                            _types: PhantomData,
-                        }
-                    })
-                }
-            )*}
-        )*
+    ($this:ident, $accessor:ident, $method:ident, $Args:ty, [$($flag:ident),*]) => {
+        eva::if_flag!(stream in [$($flag),*] {
+            Finish { mock: $this.clone() }
+        } else {
+            Step {
+                mock: $this.clone(),
+                method: concat!(stringify!($accessor), ".", stringify!($method)),
+                _types: PhantomData,
+            }
+        })
     };
 }
-
-viendesu_core::for_each_endpoint!(mock_domains);
 
 impl Authentication for Mock {
     fn authenticate(&mut self, token: session::Token) -> impl AuxFut<()> {

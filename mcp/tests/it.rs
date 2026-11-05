@@ -53,49 +53,20 @@ impl CallStep<Tags::list::Args> for ListTags {
     }
 }
 
-macro_rules! reply {
-    (genres list) => {
+struct Mock;
+
+#[eva::implement(viendesu_core::for_each_endpoint, Mock)]
+macro_rules! mock {
+    ($this:ident, genres, list, $Args:ty) => {
         ListGenres
     };
-    (tags list) => {
+    ($this:ident, tags, list, $Args:ty) => {
         ListTags
     };
-    ($accessor:ident $method:ident) => {
+    ($this:ident, $accessor:ident, $method:ident, $Args:ty) => {
         fail()
     };
 }
-
-macro_rules! mock {
-    ($(
-        $accessor:ident {
-            trait: $Trait:path,
-            client: $Client:path,
-            methods: {$(
-                $method:ident {
-                    flags: [$($flag:ident),*],
-                    lifetimes: [$($lt:lifetime),*],
-                    args: $Args:ty,
-                    ok: $Ok:ty,
-                    err: $Err:ty,
-                    output: $Output:ty,
-                    docs: [$($doc:literal),*],
-                    $($method_extra:tt)*
-                }
-            )*},
-            $($extra:tt)*
-        }
-    )*) => {$(
-        impl $Trait for Mock {$(
-            fn $method(&mut self) -> impl CallStep<$Args, Output = $Output> {
-                reply!($accessor $method)
-            }
-        )*}
-    )*};
-}
-
-struct Mock;
-
-viendesu_core::for_each_endpoint!(mock);
 
 impl Authentication for Mock {
     fn authenticate(&mut self, _: viendesu_protocol::types::session::Token) -> impl AuxFut<()> {
